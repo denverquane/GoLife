@@ -3,13 +3,17 @@ package main
 import (
 	"flag"
 	"github.com/denverquane/golife/proto/message"
+	"github.com/denverquane/golife/simulation"
 	"github.com/gorilla/websocket"
 	"google.golang.org/protobuf/proto"
 	"log"
 	"net/http"
+	"time"
 )
 
 var upgrader = websocket.Upgrader{} // use default options
+
+var clients = make(map[*websocket.Conn]bool)
 
 var addr = flag.String("addr", ":5000", "http service address")
 
@@ -21,8 +25,54 @@ func main() {
 }
 
 func Run(addr *string) {
+	go simulationWorker()
+
 	http.HandleFunc("/ws", wsHandler)
 	log.Fatal(http.ListenAndServe(*addr, nil))
+}
+
+func simulationWorker() {
+	conway := simulation.NewConwayWorld(10, 10)
+	conway.MarkAlive(5, 5)
+	conway.MarkAlive(5, 6)
+	conway.MarkAlive(5, 7)
+	for {
+		conway.Tick()
+		broadcastWorld(conway)
+		log.Print(conway.ToString())
+		time.Sleep(time.Second)
+	}
+}
+
+func broadcastWorld(world simulation.World) {
+	height, width := world.GetDims()
+	worldMsg := message.WorldData{
+		Width:  height,
+		Height: width,
+		Data:   world.GetFlattenedData(),
+		Tick:   world.GetTick(),
+	}
+	worldMsgMarshalled, err := proto.Marshal(&worldMsg)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	msg := message.Message{
+		Type:    message.MessageType_WORLD_DATA,
+		Content: worldMsgMarshalled,
+	}
+	marshalled, err := proto.Marshal(&msg)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	for client := range clients {
+
+		err := client.WriteMessage(websocket.BinaryMessage, marshalled)
+		if err != nil {
+			log.Println(err)
+		}
+	}
 }
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
@@ -35,6 +85,13 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		log.Print("upgrade:", err)
 		return
 	}
+	clients[c] = true
+
+	c.SetCloseHandler(func(code int, text string) error {
+		log.Printf("Client disconnected with code %d and text: %s", code, text)
+		delete(clients, c)
+		return nil
+	})
 
 	defer c.Close()
 

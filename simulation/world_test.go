@@ -11,43 +11,42 @@ func TestDataGrid_NeighborsValue(t *testing.T) {
 	grid[2] = make([]byte, 3)
 
 	grid[0][0] = ALIVE
-	if grid.NeighborsValue(1, 1) != 0b10000000 {
+	if grid.NeighborsValue(1, 1) != 0b100_00_000 {
 		t.Fail()
 	}
 
 	grid[2][2] = ALIVE
-	if grid.NeighborsValue(1, 1) != 0b10000001 {
+	if grid.NeighborsValue(1, 1) != 0b100_00_001 {
 		t.Fail()
 	}
 
 	grid[0][2] = ALIVE
-	if grid.NeighborsValue(1, 1) != 0b10100001 {
+	if grid.NeighborsValue(1, 1) != 0b101_00_001 {
 		t.Fail()
 	}
 
 	grid[2][0] = ALIVE
-	if grid.NeighborsValue(1, 1) != 0b10100101 {
+	if grid.NeighborsValue(1, 1) != 0b101_00_101 {
 		t.Fail()
 	}
 
 	grid[0][1] = ALIVE
-	if grid.NeighborsValue(1, 1) != 0b11100101 {
+	if grid.NeighborsValue(1, 1) != 0b111_00_101 {
 		t.Fail()
 	}
 
 	grid[2][1] = ALIVE
-	if grid.NeighborsValue(1, 1) != 0b11100111 {
+	if grid.NeighborsValue(1, 1) != 0b111_00_111 {
 		t.Fail()
 	}
 
 	grid[1][0] = ALIVE
-	if grid.NeighborsValue(1, 1) != 0b11110111 {
+	if grid.NeighborsValue(1, 1) != 0b111_10_111 {
 		t.Fail()
 	}
 
 	grid[1][2] = ALIVE
-	if grid.NeighborsValue(1, 1) != 0b11111111 {
+	if grid.NeighborsValue(1, 1) != 0b111_11_111 {
 		t.Fail()
 	}
-
 }

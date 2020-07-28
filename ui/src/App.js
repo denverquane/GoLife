@@ -3,15 +3,11 @@ import logo from './logo.svg';
 import './App.css';
 import Game from './Game';
 import NameInput from './NameInput';
-import { load } from "protobufjs";
-import proto from "./proto/message/message.proto";
+const Messages = require('./proto/message/message_pb');
 
 const UNCONNECTED = 0;
 const CONNECTED = 1;
 const REGISTERED = 2;
-
-var ProtoMessage;
-var RegisterNameMessage;
 
 class App extends Component {
     constructor(props) {
@@ -25,50 +21,14 @@ class App extends Component {
 
             wsMessage: null,
 
-            gameState: UNCONNECTED
+            gameState: UNCONNECTED,
+            board: null
         };
         this.onChangeUsername = this.onChangeUsername.bind(this);
         this.onSubmitUsername = this.onSubmitUsername.bind(this);
     }
 
     componentDidMount() {
-        load(proto, function(err, root) {
-            if (err)
-                throw err;
-
-            // Obtain a message type
-            RegisterNameMessage = root.lookupType("message.RegisterName");
-            ProtoMessage = root.lookupType("message.Message");
-
-            // // Exemplary payload
-            // var payload = {name: "AwesomeString"};
-            //
-            // // Verify the payload if necessary (i.e. when possibly incomplete or invalid)
-            // var errMsg = RegisterNameMessage.verify(payload);
-            // if (errMsg)
-            //     throw Error(errMsg);
-            //
-            // // Create a new message
-            // var message = AwesomeMessage.create(payload); // or use .fromObject if conversion is necessary
-            //
-            // // Encode a message to an Uint8Array (browser) or Buffer (node)
-            // var buffer = AwesomeMessage.encode(message).finish();
-            // // ... do something with buffer
-
-            // // Decode an Uint8Array (browser) or Buffer (node) to a message
-            // var message = AwesomeMessage.decode(buffer);
-            // // ... do something with message
-            //
-            // // If the application uses length-delimited buffers, there is also encodeDelimited and decodeDelimited.
-            //
-            // // Maybe convert the message back to a plain object
-            // var object = AwesomeMessage.toObject(message, {
-            //     longs: String,
-            //     enums: String,
-            //     bytes: String,
-            //     // see ConversionOptions
-            // });
-        });
         this.connect();
     }
 
@@ -94,7 +54,23 @@ class App extends Component {
         };
 
         ws.onmessage = (event) => {
-            console.log(event);
+            event.data.arrayBuffer().then(buffer => {
+                let message = Messages.Message.deserializeBinary(new Uint8Array(buffer));
+                console.log(message);
+                if (message.getType() === Messages.MessageType.WORLD_DATA) {
+                    console.log("Received world data!");
+                    let content = message.getContent();
+                    let WorldMessage = Messages.WorldData.deserializeBinary(content)
+                    let board = {
+                        width: WorldMessage.getWidth(),
+                        height: WorldMessage.getHeight(),
+                        data: WorldMessage.getData(),
+                        tick: WorldMessage.getTick(),
+                    }
+                    console.log(board);
+                    this.setState({board: board})
+                }
+            });
         }
 
         // websocket onclose event listener
@@ -137,24 +113,16 @@ class App extends Component {
     }
 
     onSubmitUsername(username) {
-        var payload = {name: username};
+        let regMsg = new Messages.RegisterName();
+        regMsg.setName(username);
+        let innerBytes = regMsg.serializeBinary();
 
-        var errMsg = RegisterNameMessage.verify(payload);
-            if (errMsg)
-                throw Error(errMsg);
-        var message = RegisterNameMessage.create(payload); // or use .fromObject if conversion is necessary
-        var buffer = RegisterNameMessage.encode(message).finish();
+        let msg = new Messages.Message();
+        msg.setType(Messages.MessageType.REGISTER);
+        msg.setContent(innerBytes);
+        let bytes = msg.serializeBinary();
 
-        var payload2 = {type: 0, content: buffer}
-        var errMsg2 = ProtoMessage.verify(payload2);
-        if (errMsg2)
-            throw Error(errMsg);
-        var message2 = ProtoMessage.create(payload2); // or use .fromObject if conversion is necessary
-        var buffer2 = ProtoMessage.encode(message2).finish();
-
-
-        console.log("Sending: " + JSON.stringify(payload2));
-        this.state.ws.send(buffer2);
+        this.state.ws.send(bytes);
     }
 
     render() {
@@ -180,8 +148,8 @@ class App extends Component {
       </header>
         <div className="App-content">
             {
-                this.state.gameState === REGISTERED
-                    ? <Game/>
+                this.state.gameState === CONNECTED
+                    ? <Game board={this.state.board}/>
                     : <div/>
             }
         </div>

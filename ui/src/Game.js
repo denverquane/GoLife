@@ -15,10 +15,31 @@ export default class Game extends Component {
         context.fillRect(0, 0, canvas.width, canvas.height);
     }
 
+    componentDidUpdate(prevProps, prevState, snapshot) {
+        let oldTick = prevProps.board && prevProps.board.tick ? prevProps.board.tick : -1
+        if (this.props.board && this.props.board.tick !== oldTick) {
+            const canvas = this.canvasRef.current;
+            const context = canvas.getContext('2d');
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.fillStyle = "#FF00FF";
+            let cWidth = canvas.width / this.props.board.width;
+            let cHeight = canvas.height / this.props.board.height;
+            for (let y = 0; y < this.props.board.height; y++) {
+                for (let x = 0; x < this.props.board.width; x++) {
+                    let elemIndex = y * (this.props.board.width) + x
+                    if (this.props.board.data[elemIndex] & 128) {
+                        context.fillRect(x*cWidth, y*cHeight, cWidth, cHeight);
+                    }
+                }
+            }
+            context.fillStyle = "#000000";
+        }
+    }
+
     render() {
         return (
             <div className="Game">
-                <canvas ref={this.canvasRef}></canvas>
+                <canvas width={600} height={600} ref={this.canvasRef}></canvas>
             </div>
         );
     }
