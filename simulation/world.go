@@ -91,3 +91,45 @@ func (world World) ToString() string {
 func (world *World) MarkAlive(y, x int64) {
 	(*world.data)[y][x] = ALIVE
 }
+
+func (world *World) MakeGliderGun(y, x int64) {
+	(*world.data)[y+4][x] = ALIVE
+	(*world.data)[y+4][x+1] = ALIVE
+	(*world.data)[y+5][x] = ALIVE
+	(*world.data)[y+5][x+1] = ALIVE
+
+	(*world.data)[y+2][x+12] = ALIVE
+	(*world.data)[y+2][x+13] = ALIVE
+	(*world.data)[y+3][x+11] = ALIVE
+	(*world.data)[y+3][x+15] = ALIVE
+	(*world.data)[y+4][x+10] = ALIVE
+	(*world.data)[y+4][x+16] = ALIVE
+	(*world.data)[y+5][x+10] = ALIVE
+	(*world.data)[y+5][x+14] = ALIVE
+	(*world.data)[y+5][x+16] = ALIVE
+	(*world.data)[y+5][x+17] = ALIVE
+	(*world.data)[y+6][x+10] = ALIVE
+	(*world.data)[y+6][x+16] = ALIVE
+	(*world.data)[y+7][x+11] = ALIVE
+	(*world.data)[y+7][x+15] = ALIVE
+	(*world.data)[y+8][x+12] = ALIVE
+	(*world.data)[y+8][x+13] = ALIVE
+
+	(*world.data)[y][x+24] = ALIVE
+	(*world.data)[y+1][x+22] = ALIVE
+	(*world.data)[y+1][x+24] = ALIVE
+	(*world.data)[y+2][x+20] = ALIVE
+	(*world.data)[y+2][x+21] = ALIVE
+	(*world.data)[y+3][x+20] = ALIVE
+	(*world.data)[y+3][x+21] = ALIVE
+	(*world.data)[y+4][x+20] = ALIVE
+	(*world.data)[y+4][x+21] = ALIVE
+	(*world.data)[y+5][x+22] = ALIVE
+	(*world.data)[y+5][x+24] = ALIVE
+	(*world.data)[y+6][x+24] = ALIVE
+
+	(*world.data)[y+2][x+34] = ALIVE
+	(*world.data)[y+2][x+35] = ALIVE
+	(*world.data)[y+3][x+34] = ALIVE
+	(*world.data)[y+3][x+35] = ALIVE
+}

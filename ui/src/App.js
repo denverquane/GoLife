@@ -56,18 +56,14 @@ class App extends Component {
         ws.onmessage = (event) => {
             event.data.arrayBuffer().then(buffer => {
                 let message = Messages.Message.deserializeBinary(new Uint8Array(buffer));
-                console.log(message);
                 if (message.getType() === Messages.MessageType.WORLD_DATA) {
-                    console.log("Received world data!");
-                    let content = message.getContent();
-                    let WorldMessage = Messages.WorldData.deserializeBinary(content)
+                    let WorldMessage = Messages.WorldData.deserializeBinary(message.getContent())
                     let board = {
                         width: WorldMessage.getWidth(),
                         height: WorldMessage.getHeight(),
                         data: WorldMessage.getData(),
                         tick: WorldMessage.getTick(),
                     }
-                    console.log(board);
                     this.setState({board: board})
                 }
             });

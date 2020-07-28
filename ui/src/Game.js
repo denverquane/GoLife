@@ -39,7 +39,8 @@ export default class Game extends Component {
     render() {
         return (
             <div className="Game">
-                <canvas width={600} height={600} ref={this.canvasRef}></canvas>
+                {this.props.board ? this.props.board.tick : 0}
+                <canvas width={800} height={800} ref={this.canvasRef}></canvas>
             </div>
         );
     }

@@ -32,15 +32,13 @@ func Run(addr *string) {
 }
 
 func simulationWorker() {
-	conway := simulation.NewConwayWorld(10, 10)
-	conway.MarkAlive(5, 5)
-	conway.MarkAlive(5, 6)
-	conway.MarkAlive(5, 7)
+	conway := simulation.NewConwayWorld(400, 400)
+	conway.MakeGliderGun(0, 0)
 	for {
 		conway.Tick()
 		broadcastWorld(conway)
-		log.Print(conway.ToString())
-		time.Sleep(time.Second)
+		//log.Print(conway.ToString())
+		time.Sleep(time.Millisecond * 10)
 	}
 }
 
