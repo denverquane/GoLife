@@ -5,9 +5,20 @@ enum MessageType {
   //sent by the client when they want to register, and echoed back by the server on a successful register
   REGISTER = 0;
 
+  //repeated player data
   PLAYERS = 1;
+
+  //raw world data, alongside any additional information about the world (dimensions, tick, etc)
   WORLD_DATA = 2;
-  WORLD_INFO = 3;
+
+  //A command from the client to the server
+  COMMAND = 3;
+
+  //A response in regards to the client issuing a command
+  RESPONSE = 4;
+
+  //A chat message that has gone out
+  CHAT_LOG = 5;
 }
 
 message Message {
@@ -25,12 +36,40 @@ message Players {
   repeated Player players = 1;
 }
 
-message WorldInfo {
-  int64 width = 1;
-  int64 height = 2;
-}
-
 message WorldData {
   bytes data = 1;
   int64 tick = 2;
+
+  int64 width = 3;
+  int64 height = 4;
+}
+
+enum CommandType {
+  MARK_CELL = 0;
+  POST_CHAT = 1;
+  TOGGLE_PAUSE = 2;
+  CHANGE_COLOR = 3;
+  CHANGE_NAME = 4;
+}
+
+message Command {
+  CommandType type = 1;
+  int64 x = 2;
+  int64 y = 3;
+  string text = 4;
+}
+
+enum ResponseCode {
+  GENERIC_SUCCESS = 0;
+  GENERIC_FAILURE = 1;
+}
+
+message Response {
+  ResponseCode code = 1;
+  string text = 2;
+}
+
+message Chat {
+  Player player = 1;
+  string text = 2;
 }

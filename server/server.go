@@ -24,6 +24,8 @@ type Player struct {
 
 var clients = make(map[*websocket.Conn]Player)
 
+var SimulationChannel = make(chan simulation.SimulatorMessage)
+
 var addr = flag.String("addr", ":5000", "http service address")
 
 func main() {
@@ -34,7 +36,7 @@ func main() {
 }
 
 func Run(addr *string) {
-	go simulationWorker(60)
+	go simulationWorker(60, SimulationChannel)
 
 	http.HandleFunc("/ws", wsHandler)
 	log.Fatal(http.ListenAndServe(*addr, nil))
@@ -42,46 +44,61 @@ func Run(addr *string) {
 
 var GlobalWorld simulation.World
 
-func simulationWorker(targetFps int64) {
+func simulationWorker(targetFps int64, msgChan <-chan simulation.SimulatorMessage) {
 	msPerFrame := (1.0 / float64(targetFps)) * 1000.0
 	GlobalWorld = simulation.NewConwayWorld(200, 200)
 	GlobalWorld.MakeGliderGun(0, 0)
+	paused := false
 	for {
-		oldT := time.Now().UnixNano()
-		GlobalWorld.Tick()
-		//TODO send message to dedicated worker to send the status probably?
-		//Consider race condition of message being received AFTER another tick...
-		broadcastWorld(GlobalWorld)
-		tickMs := float64(time.Now().UnixNano()-oldT) / NS_PER_MS
-		//log.Printf("%fms to tick; sleeping %fms\n", tickMs, msPerFrame - tickMs)
-		time.Sleep(time.Duration(NS_PER_MS * (msPerFrame - tickMs)))
+		select {
+		case msg := <-msgChan:
+			switch msg.Type {
+			case simulation.TOGGLE_PAUSE:
+				paused = !paused
+			}
+		default:
+			if !paused {
+				oldT := time.Now().UnixNano()
+				GlobalWorld.Tick()
+				//TODO send message to dedicated worker to send the status probably?
+				//Consider race condition of message being received AFTER another tick...
+				broadcastWorld(&GlobalWorld)
+				tickMs := float64(time.Now().UnixNano()-oldT) / NS_PER_MS
+				//log.Printf("%fms to tick; sleeping %fms\n", tickMs, msPerFrame - tickMs)
+				time.Sleep(time.Duration(NS_PER_MS * (msPerFrame - tickMs)))
+			} else {
+				broadcastWorld(&GlobalWorld)
+				log.Println("Simulation is paused; sleeping for 1000ms")
+				time.Sleep(time.Millisecond * 1000)
+			}
+		}
 	}
 }
 
-func broadcastWorld(world simulation.World) {
-	worldMsg := message.WorldData{
-		Data: world.GetFlattenedData(),
-		Tick: world.GetTick(),
-	}
-	worldMsgMarshalled, err := proto.Marshal(&worldMsg)
+func sendFirstWorldMessage(client *websocket.Conn, world *simulation.World) {
+	marshalled, err := world.ToFullProtoBytes()
+
 	if err != nil {
-		log.Println(err)
-		return
+		log.Printf("Error in marshalling world: %s\n", err)
+	} else {
+		err := client.WriteMessage(websocket.BinaryMessage, marshalled)
+		if err != nil {
+			log.Println(err)
+		}
 	}
-	msg := message.Message{
-		Type:    message.MessageType_WORLD_DATA,
-		Content: worldMsgMarshalled,
-	}
-	marshalled, err := proto.Marshal(&msg)
+}
+
+func broadcastWorld(world *simulation.World) {
+	marshalled, err := world.ToMinProtoBytes()
 	if err != nil {
-		log.Println(err)
-		return
-	}
-	for client, player := range clients {
-		if player.name != "" || DEBUG_BROADCAST_NON_REGISTERED {
-			err := client.WriteMessage(websocket.BinaryMessage, marshalled)
-			if err != nil {
-				log.Println(err)
+		log.Printf("Error in marshalling world: %s\n", err)
+	} else {
+		for client, player := range clients {
+			if player.name != "" || DEBUG_BROADCAST_NON_REGISTERED {
+				err := client.WriteMessage(websocket.BinaryMessage, marshalled)
+				if err != nil {
+					log.Println(err)
+				}
 			}
 		}
 	}
@@ -169,30 +186,19 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 						log.Printf("Error echoing registration message to %s: %s\n", regMsg.Name, err)
 					}
 					broadcastPlayers()
-					h, w := GlobalWorld.GetDims()
-					content := message.WorldInfo{
-						Width:  w,
-						Height: h,
+					sendFirstWorldMessage(c, &GlobalWorld)
+				}
+			case message.MessageType_COMMAND:
+				cmdMsg := message.Command{}
+				err := proto.Unmarshal(msg.Content, &cmdMsg)
+				if err != nil {
+					log.Println(err)
+				} else {
+					switch cmdMsg.Type {
+					case message.CommandType_TOGGLE_PAUSE:
+						log.Println("Sending toggle pause to channel")
+						SimulationChannel <- simulation.SimulatorMessage{Type: simulation.TOGGLE_PAUSE}
 					}
-					marshalled, err := proto.Marshal(&content)
-					if err != nil {
-						log.Println(err)
-					} else {
-						msg = message.Message{
-							Type:    message.MessageType_WORLD_INFO,
-							Content: marshalled,
-						}
-						finalMarshalled, err := proto.Marshal(&msg)
-						if err != nil {
-							log.Println(err)
-						} else {
-							err := c.WriteMessage(websocket.BinaryMessage, finalMarshalled)
-							if err != nil {
-								log.Println(err)
-							}
-						}
-					}
-
 				}
 			default:
 				log.Printf("Received non-recognized message of type %d with content: %s", msg.Type, msg.Content)

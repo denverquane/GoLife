@@ -16,18 +16,17 @@ export default class Game extends Component {
     }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
-        let oldTick = prevProps.board && prevProps.board.tick ? prevProps.board.tick : -1
-        if (this.props.board && this.props.board.tick !== oldTick) {
+        if (this.props.tick !== prevProps.tick) {
             const canvas = this.canvasRef.current;
             const context = canvas.getContext('2d');
             context.fillRect(0, 0, canvas.width, canvas.height);
             context.fillStyle = "#FF00FF";
-            let cWidth = canvas.width / this.props.board.width;
-            let cHeight = canvas.height / this.props.board.height;
-            for (let y = 0; y < this.props.board.height; y++) {
-                for (let x = 0; x < this.props.board.width; x++) {
-                    let elemIndex = y * (this.props.board.width) + x
-                    if (this.props.board.data[elemIndex] & 128) {
+            let cWidth = canvas.width / this.props.width;
+            let cHeight = canvas.height / this.props.height;
+            for (let y = 0; y < this.props.height; y++) {
+                for (let x = 0; x < this.props.width; x++) {
+                    let elemIndex = y * (this.props.width) + x
+                    if (this.props.boardData[elemIndex] & 128) {
                         context.fillRect(x*cWidth, y*cHeight, cWidth-1, cHeight-1);
                     }
                 }
@@ -40,7 +39,7 @@ export default class Game extends Component {
         return (
             <div className="Game" >
                 <canvas width={800} height={800} ref={this.canvasRef}></canvas>
-                Tick: {this.props.board ? this.props.board.tick : 0}
+                Tick: {this.props.tick}
             </div>
         );
     }

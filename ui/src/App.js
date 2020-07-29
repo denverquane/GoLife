@@ -31,6 +31,7 @@ class App extends Component {
 
             gameState: UNCONNECTED,
             boardData: null,
+            boardTick: 0,
             boardWidth: 0,
             boardHeight: 0
         };
@@ -66,25 +67,25 @@ class App extends Component {
         ws.onmessage = (event) => {
             event.data.arrayBuffer().then(buffer => {
                 let message = Messages.Message.deserializeBinary(new Uint8Array(buffer));
-                if (message.getType() === Messages.MessageType.WORLD_INFO) {
-                    let WorldInfo = Messages.WorldInfo.deserializeBinary(message.getContent())
-                    console.log("Received dimensions of grid: %dw,%dh", WorldInfo.getWidth(), WorldInfo.getHeight())
-                    this.setState({boardWidth: WorldInfo.getWidth(), boardHeight: WorldInfo.getHeight() })
-                } else if (message.getType() === Messages.MessageType.WORLD_DATA) {
-                    let WorldMessage = Messages.WorldData.deserializeBinary(message.getContent())
-                    let board = {
-                        width: this.state.boardWidth,
-                        height: this.state.boardHeight,
-                        data: WorldMessage.getData(),
-                        tick: WorldMessage.getTick(),
-                    }
-                    this.setState({board: board})
-                } else if (message.getType() === Messages.MessageType.REGISTER) {
-                    let RegisterMessage = Messages.Player.deserializeBinary(message.getContent())
-                    this.setState({gameState: REGISTERED, remoteUsername: RegisterMessage.getName()})
-                } else if (message.getType() === Messages.MessageType.PLAYERS) {
-                    let PlayersMessage = Messages.Players.deserializeBinary(message.getContent())
-                    this.setState({playersOnline: PlayersMessage.getPlayersList()})
+                switch(message.getType()) {
+                    case Messages.MessageType.WORLD_DATA:
+                        let WorldMessage = Messages.WorldData.deserializeBinary(message.getContent())
+                        if (WorldMessage.getHeight() !== 0 && WorldMessage.getWidth() !== 0){
+                            this.setState({boardWidth: WorldMessage.getWidth(), boardHeight: WorldMessage.getHeight(),
+                                boardData:  WorldMessage.getData(), boardTick: WorldMessage.getTick()})
+                        } else {
+                            this.setState({boardData:  WorldMessage.getData(), boardTick: WorldMessage.getTick()})
+                        }
+
+                        break;
+                    case Messages.MessageType.REGISTER:
+                        let RegisterMessage = Messages.Player.deserializeBinary(message.getContent())
+                        this.setState({gameState: REGISTERED, remoteUsername: RegisterMessage.getName()})
+                        break;
+                    case Messages.MessageType.PLAYERS:
+                        let PlayersMessage = Messages.Players.deserializeBinary(message.getContent())
+                        this.setState({playersOnline: PlayersMessage.getPlayersList()})
+                        break;
                 }
             });
         }
@@ -140,6 +141,17 @@ class App extends Component {
         let bytes = msg.serializeBinary();
 
         this.state.ws.send(bytes);
+
+        // let cmdMsg = new Messages.Command();
+        // cmdMsg.setType(Messages.CommandType.TOGGLE_PAUSE)
+        // innerBytes = cmdMsg.serializeBinary()
+        // msg = new Messages.Message();
+        // msg.setType(Messages.MessageType.COMMAND);
+        // msg.setContent(innerBytes);
+        // bytes = msg.serializeBinary();
+        //
+        // this.state.ws.send(bytes);
+
     }
 
     render() {
@@ -150,7 +162,13 @@ class App extends Component {
               this.state.gameState === REGISTERED ?
                   <div className="App-header-left">
                       <div>Players Online: </div>
-                      {this.state.playersOnline ? <div>{this.state.playersOnline.length}</div> : <div/>}
+                      {this.state.playersOnline
+                          ? <div>
+                              {this.state.playersOnline.map(function (item, i) {
+                                  return <div key={i}>{item.getName()}</div>
+                              })}
+                            </div>
+                          : <div/>}
                   </div> : <div className="App-header-left"/>
           }
 
@@ -170,7 +188,8 @@ class App extends Component {
         <div className="App-content">
             {
                 this.state.gameState === REGISTERED || (this.state.gameState === CONNECTED && DEBUG_DONT_REGISTER_FOR_DATA)
-                    ? <Game board={this.state.board}/>
+                    ? <Game boardData={this.state.boardData} tick={this.state.boardTick}
+                            width={this.state.boardWidth} height={this.state.boardHeight}/>
                     : this.state.gameState !== UNCONNECTED ? <div>Please enter a username!</div> : <div/>
             }
         </div>

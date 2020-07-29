@@ -3,6 +3,8 @@ package simulation
 import (
 	"bytes"
 	"fmt"
+	"github.com/denverquane/golife/proto/message"
+	"google.golang.org/protobuf/proto"
 )
 
 type DataGrid [][]byte
@@ -21,14 +23,55 @@ type World struct {
 	tick              int64
 }
 
-func (world World) GetDims() (height int64, width int64) {
+func (world *World) GetDims() (height int64, width int64) {
 	return world.height, world.width
 }
 
-func (world World) GetFlattenedData() []byte {
+func (world *World) GetFlattenedData() []byte {
 	return bytes.Join(*world.data, nil)
 }
 
+func (world *World) ToMinProtoBytes() ([]byte, error) {
+	worldMsg := message.WorldData{
+		Data: world.GetFlattenedData(),
+		Tick: world.GetTick(),
+	}
+	worldMsgMarshalled, err := proto.Marshal(&worldMsg)
+	if err != nil {
+		return nil, err
+	}
+	msg := message.Message{
+		Type:    message.MessageType_WORLD_DATA,
+		Content: worldMsgMarshalled,
+	}
+	marshalled, err := proto.Marshal(&msg)
+	if err != nil {
+		return nil, err
+	}
+	return marshalled, nil
+}
+
+func (world *World) ToFullProtoBytes() ([]byte, error) {
+	worldMsg := message.WorldData{
+		Data:   world.GetFlattenedData(),
+		Tick:   world.tick,
+		Width:  world.width,
+		Height: world.height,
+	}
+	worldMsgMarshalled, err := proto.Marshal(&worldMsg)
+	if err != nil {
+		return nil, err
+	}
+	msg := message.Message{
+		Type:    message.MessageType_WORLD_DATA,
+		Content: worldMsgMarshalled,
+	}
+	marshalled, err := proto.Marshal(&msg)
+	if err != nil {
+		return nil, err
+	}
+	return marshalled, nil
+}
 func NewConwayWorld(width, height int64) World {
 	data := make(DataGrid, height)
 	for i, _ := range data {
@@ -50,7 +93,7 @@ func NewConwayWorld(width, height int64) World {
 	}
 }
 
-func (world World) GetTick() int64 {
+func (world *World) GetTick() int64 {
 	return world.tick
 }
 
@@ -121,7 +164,7 @@ func (world *World) Tick() {
 	world.tick++
 }
 
-func (world World) ToString() string {
+func (world *World) ToString() string {
 	buf := bytes.NewBuffer([]byte{})
 	buf.WriteString(fmt.Sprintf("Height: %d, Width: %d\n", world.height, world.width))
 	for y := int64(0); y < world.height; y++ {
@@ -183,4 +226,12 @@ func (world *World) MakeGliderGun(y, x int64) {
 	(*world.data)[y+2][x+35] = ALIVE
 	(*world.data)[y+3][x+34] = ALIVE
 	(*world.data)[y+3][x+35] = ALIVE
+}
+
+const (
+	TOGGLE_PAUSE int = 1
+)
+
+type SimulatorMessage struct {
+	Type int
 }
