@@ -7,7 +7,7 @@ enum MessageType {
 
   PLAYERS = 1;
   WORLD_DATA = 2;
-  COMMAND = 3;
+  WORLD_INFO = 3;
 }
 
 message Message {
@@ -25,10 +25,12 @@ message Players {
   repeated Player players = 1;
 }
 
-message WorldData {
+message WorldInfo {
   int64 width = 1;
   int64 height = 2;
+}
 
-  bytes data = 3;
-  int64 tick = 4;
+message WorldData {
+  bytes data = 1;
+  int64 tick = 2;
 }

@@ -28,7 +28,7 @@ export default class Game extends Component {
                 for (let x = 0; x < this.props.board.width; x++) {
                     let elemIndex = y * (this.props.board.width) + x
                     if (this.props.board.data[elemIndex] & 128) {
-                        context.fillRect(x*cWidth, y*cHeight, cWidth, cHeight);
+                        context.fillRect(x*cWidth, y*cHeight, cWidth-1, cHeight-1);
                     }
                 }
             }

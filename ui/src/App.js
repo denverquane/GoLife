@@ -9,7 +9,7 @@ const UNCONNECTED = 0;
 const CONNECTED = 1;
 const REGISTERED = 2;
 
-const DEBUG_DONT_REGISTER_FOR_DATA = false;
+const DEBUG_DONT_REGISTER_FOR_DATA = true;
 
 let BASE_URL = process.env.REACT_APP_SERVICE_URL;
 if (!BASE_URL || BASE_URL === "") {
@@ -30,7 +30,9 @@ class App extends Component {
             wsMessage: null,
 
             gameState: UNCONNECTED,
-            board: null
+            boardData: null,
+            boardWidth: 0,
+            boardHeight: 0
         };
         this.onChangeUsername = this.onChangeUsername.bind(this);
         this.onSubmitUsername = this.onSubmitUsername.bind(this);
@@ -64,11 +66,15 @@ class App extends Component {
         ws.onmessage = (event) => {
             event.data.arrayBuffer().then(buffer => {
                 let message = Messages.Message.deserializeBinary(new Uint8Array(buffer));
-                if (message.getType() === Messages.MessageType.WORLD_DATA) {
+                if (message.getType() === Messages.MessageType.WORLD_INFO) {
+                    let WorldInfo = Messages.WorldInfo.deserializeBinary(message.getContent())
+                    console.log("Received dimensions of grid: %dw,%dh", WorldInfo.getWidth(), WorldInfo.getHeight())
+                    this.setState({boardWidth: WorldInfo.getWidth(), boardHeight: WorldInfo.getHeight() })
+                } else if (message.getType() === Messages.MessageType.WORLD_DATA) {
                     let WorldMessage = Messages.WorldData.deserializeBinary(message.getContent())
                     let board = {
-                        width: WorldMessage.getWidth(),
-                        height: WorldMessage.getHeight(),
+                        width: this.state.boardWidth,
+                        height: this.state.boardHeight,
                         data: WorldMessage.getData(),
                         tick: WorldMessage.getTick(),
                     }
@@ -149,7 +155,7 @@ class App extends Component {
           }
 
           <div className="App-header-middle">
-              <img src={logo} className="App-logo" alt="logo" />
+              {/*<img src={logo} className="App-logo" alt="logo" />*/}
               <div className="App-name">GoLife</div>
               <div className="App-slogan">Interactive Multiplayer Cellular Automata!</div>
               {this.state.gameState === UNCONNECTED ? <div>DISCONNECTED</div> : <div/>}

@@ -13,7 +13,7 @@ import (
 
 const NS_PER_MS = 1_000_000.0
 
-const DEBUG_BROADCAST_NON_REGISTERED = false
+const DEBUG_BROADCAST_NON_REGISTERED = true
 
 var upgrader = websocket.Upgrader{} // use default options
 
@@ -40,14 +40,18 @@ func Run(addr *string) {
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
 
+var GlobalWorld simulation.World
+
 func simulationWorker(targetFps int64) {
 	msPerFrame := (1.0 / float64(targetFps)) * 1000.0
-	conway := simulation.NewConwayWorld(400, 400)
-	conway.MakeGliderGun(0, 0)
+	GlobalWorld = simulation.NewConwayWorld(200, 200)
+	GlobalWorld.MakeGliderGun(0, 0)
 	for {
 		oldT := time.Now().UnixNano()
-		conway.Tick()
-		broadcastWorld(conway)
+		GlobalWorld.Tick()
+		//TODO send message to dedicated worker to send the status probably?
+		//Consider race condition of message being received AFTER another tick...
+		broadcastWorld(GlobalWorld)
 		tickMs := float64(time.Now().UnixNano()-oldT) / NS_PER_MS
 		//log.Printf("%fms to tick; sleeping %fms\n", tickMs, msPerFrame - tickMs)
 		time.Sleep(time.Duration(NS_PER_MS * (msPerFrame - tickMs)))
@@ -55,12 +59,9 @@ func simulationWorker(targetFps int64) {
 }
 
 func broadcastWorld(world simulation.World) {
-	height, width := world.GetDims()
 	worldMsg := message.WorldData{
-		Width:  height,
-		Height: width,
-		Data:   world.GetFlattenedData(),
-		Tick:   world.GetTick(),
+		Data: world.GetFlattenedData(),
+		Tick: world.GetTick(),
 	}
 	worldMsgMarshalled, err := proto.Marshal(&worldMsg)
 	if err != nil {
@@ -160,13 +161,38 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 				if err != nil {
 					log.Println(err)
 				} else {
+					//TODO verify name/color aren't taken
 					log.Printf("Registering %s\n", regMsg.Name)
-					clients[c] = Player{name: regMsg.Name, color: 10}
+					clients[c] = Player{name: regMsg.Name, color: regMsg.Color}
 					err := c.WriteMessage(websocket.BinaryMessage, data)
 					if err != nil {
 						log.Printf("Error echoing registration message to %s: %s\n", regMsg.Name, err)
 					}
 					broadcastPlayers()
+					h, w := GlobalWorld.GetDims()
+					content := message.WorldInfo{
+						Width:  w,
+						Height: h,
+					}
+					marshalled, err := proto.Marshal(&content)
+					if err != nil {
+						log.Println(err)
+					} else {
+						msg = message.Message{
+							Type:    message.MessageType_WORLD_INFO,
+							Content: marshalled,
+						}
+						finalMarshalled, err := proto.Marshal(&msg)
+						if err != nil {
+							log.Println(err)
+						} else {
+							err := c.WriteMessage(websocket.BinaryMessage, finalMarshalled)
+							if err != nil {
+								log.Println(err)
+							}
+						}
+					}
+
 				}
 			default:
 				log.Printf("Received non-recognized message of type %d with content: %s", msg.Type, msg.Content)
