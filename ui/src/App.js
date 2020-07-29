@@ -9,6 +9,8 @@ const UNCONNECTED = 0;
 const CONNECTED = 1;
 const REGISTERED = 2;
 
+const DEBUG_DONT_REGISTER_FOR_DATA = false;
+
 let BASE_URL = process.env.REACT_APP_SERVICE_URL;
 if (!BASE_URL || BASE_URL === "") {
     console.log("REACT_APP_SERVICE_URL not provided; defaulting to localhost:5000")
@@ -71,6 +73,12 @@ class App extends Component {
                         tick: WorldMessage.getTick(),
                     }
                     this.setState({board: board})
+                } else if (message.getType() === Messages.MessageType.REGISTER) {
+                    let RegisterMessage = Messages.Player.deserializeBinary(message.getContent())
+                    this.setState({gameState: REGISTERED, remoteUsername: RegisterMessage.getName()})
+                } else if (message.getType() === Messages.MessageType.PLAYERS) {
+                    let PlayersMessage = Messages.Players.deserializeBinary(message.getContent())
+                    this.setState({playersOnline: PlayersMessage.getPlayersList()})
                 }
             });
         }
@@ -84,6 +92,7 @@ class App extends Component {
                 )} second.`,
                 e.reason
             );
+            this.setState({gameState: UNCONNECTED})
 
             that.timeout = that.timeout + that.timeout; //increment retry interval
             connectInterval = setTimeout(this.check, Math.min(10000, that.timeout)); //call check function after timeout
@@ -115,7 +124,7 @@ class App extends Component {
     }
 
     onSubmitUsername(username) {
-        let regMsg = new Messages.RegisterName();
+        let regMsg = new Messages.Player();
         regMsg.setName(username);
         let innerBytes = regMsg.serializeBinary();
 
@@ -131,10 +140,14 @@ class App extends Component {
   return (
     <div className="App">
       <header className="App-header">
-          <div className="App-header-left">
-              <div>Players Online: </div>
-              <div>{this.state.playersOnline}</div>
-          </div>
+          {
+              this.state.gameState === REGISTERED ?
+                  <div className="App-header-left">
+                      <div>Players Online: </div>
+                      {this.state.playersOnline ? <div>{this.state.playersOnline.length}</div> : <div/>}
+                  </div> : <div className="App-header-left"/>
+          }
+
           <div className="App-header-middle">
               <img src={logo} className="App-logo" alt="logo" />
               <div className="App-name">GoLife</div>
@@ -142,17 +155,17 @@ class App extends Component {
               {this.state.gameState === UNCONNECTED ? <div>DISCONNECTED</div> : <div/>}
           </div>
           <div className="App-header-right">
-              <NameInput isDisabled={this.state.gameState === UNCONNECTED|| this.state.localUsername === this.state.remoteUsername}
+              <NameInput isDisabled={this.state.gameState === UNCONNECTED || this.state.localUsername === this.state.remoteUsername}
                          onSubmit={this.onSubmitUsername}  onChange={this.onChangeUsername}
-              nameResponse={this.state.nameResponse}/>
+              nameResponse={this.state.remoteUsername}/>
           </div>
 
       </header>
         <div className="App-content">
             {
-                this.state.gameState === CONNECTED
+                this.state.gameState === REGISTERED || (this.state.gameState === CONNECTED && DEBUG_DONT_REGISTER_FOR_DATA)
                     ? <Game board={this.state.board}/>
-                    : <div/>
+                    : this.state.gameState !== UNCONNECTED ? <div>Please enter a username!</div> : <div/>
             }
         </div>
     </div>

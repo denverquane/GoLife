@@ -11,9 +11,18 @@ import (
 	"time"
 )
 
+const NS_PER_MS = 1_000_000.0
+
+const DEBUG_BROADCAST_NON_REGISTERED = false
+
 var upgrader = websocket.Upgrader{} // use default options
 
-var clients = make(map[*websocket.Conn]bool)
+type Player struct {
+	name  string
+	color uint32
+}
+
+var clients = make(map[*websocket.Conn]Player)
 
 var addr = flag.String("addr", ":5000", "http service address")
 
@@ -25,20 +34,23 @@ func main() {
 }
 
 func Run(addr *string) {
-	go simulationWorker()
+	go simulationWorker(60)
 
 	http.HandleFunc("/ws", wsHandler)
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
 
-func simulationWorker() {
+func simulationWorker(targetFps int64) {
+	msPerFrame := (1.0 / float64(targetFps)) * 1000.0
 	conway := simulation.NewConwayWorld(400, 400)
 	conway.MakeGliderGun(0, 0)
 	for {
+		oldT := time.Now().UnixNano()
 		conway.Tick()
 		broadcastWorld(conway)
-		//log.Print(conway.ToString())
-		time.Sleep(time.Millisecond * 10)
+		tickMs := float64(time.Now().UnixNano()-oldT) / NS_PER_MS
+		//log.Printf("%fms to tick; sleeping %fms\n", tickMs, msPerFrame - tickMs)
+		time.Sleep(time.Duration(NS_PER_MS * (msPerFrame - tickMs)))
 	}
 }
 
@@ -64,8 +76,39 @@ func broadcastWorld(world simulation.World) {
 		log.Println(err)
 		return
 	}
-	for client := range clients {
+	for client, player := range clients {
+		if player.name != "" || DEBUG_BROADCAST_NON_REGISTERED {
+			err := client.WriteMessage(websocket.BinaryMessage, marshalled)
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	}
+}
 
+func broadcastPlayers() {
+	players := message.Players{}
+	for _, v := range clients {
+		players.Players = append(players.Players, &message.Player{
+			Name:  v.name,
+			Color: v.color,
+		})
+	}
+	playersMarshalled, err := proto.Marshal(&players)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	msg := message.Message{
+		Type:    message.MessageType_PLAYERS,
+		Content: playersMarshalled,
+	}
+	marshalled, err := proto.Marshal(&msg)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	for client := range clients {
 		err := client.WriteMessage(websocket.BinaryMessage, marshalled)
 		if err != nil {
 			log.Println(err)
@@ -83,7 +126,10 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		log.Print("upgrade:", err)
 		return
 	}
-	clients[c] = true
+	clients[c] = Player{
+		name:  "",
+		color: 0,
+	}
 
 	c.SetCloseHandler(func(code int, text string) error {
 		log.Printf("Client disconnected with code %d and text: %s", code, text)
@@ -99,18 +145,28 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 	for {
 		msg := message.Message{}
 		_, data, err := c.ReadMessage()
+		if err != nil {
+			log.Println(err)
+			return
+		}
 		err = proto.Unmarshal(data, &msg)
 		if err != nil {
 			log.Printf("Encountered error unmarshalling message: %s\n", err)
 		} else {
 			switch msg.Type {
 			case message.MessageType_REGISTER:
-				regMsg := message.RegisterName{}
+				regMsg := message.Player{}
 				err := proto.Unmarshal(msg.Content, &regMsg)
 				if err != nil {
 					log.Println(err)
 				} else {
 					log.Printf("Registering %s\n", regMsg.Name)
+					clients[c] = Player{name: regMsg.Name, color: 10}
+					err := c.WriteMessage(websocket.BinaryMessage, data)
+					if err != nil {
+						log.Printf("Error echoing registration message to %s: %s\n", regMsg.Name, err)
+					}
+					broadcastPlayers()
 				}
 			default:
 				log.Printf("Received non-recognized message of type %d with content: %s", msg.Type, msg.Content)

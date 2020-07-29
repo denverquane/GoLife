@@ -2,13 +2,12 @@ syntax = "proto3";
 package message;
 
 enum MessageType {
+  //sent by the client when they want to register, and echoed back by the server on a successful register
   REGISTER = 0;
-  ENTER_WORLD = 1;
-  LEAVE_WORLD = 2;
 
-  WORLD_DATA = 3;
-
-  COMMAND = 4;
+  PLAYERS = 1;
+  WORLD_DATA = 2;
+  COMMAND = 3;
 }
 
 message Message {
@@ -17,8 +16,13 @@ message Message {
   bytes content = 2;
 }
 
-message RegisterName {
+message Player {
   string name = 1;
+  uint32 color = 2;
+}
+
+message Players {
+  repeated Player players = 1;
 }
 
 message WorldData {

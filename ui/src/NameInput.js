@@ -25,15 +25,13 @@ class NameInput extends Component {
         return (
             <div>
                 Username:
-                {this.props.nameResponse && this.props.nameResponse.topic === "register_success" ?
-                <div>{this.props.nameResponse.data}</div>
+                {this.props.nameResponse ?
+                <div>{this.props.nameResponse}</div>
                 : <div><form className="name-input-form" onSubmit={this.handleSubmit}>
                     <input className="name-input-input" type="text" value={this.state.value} onChange={this.handleChange} />
                     <input className="name-input-button" disabled={this.props.isDisabled} type="submit" value="Submit" />
                 </form>
-                {this.props.nameResponse && this.props.nameResponse.topic === "register_error" ?
-                    <div className="name-error">{this.props.nameResponse.data}</div> : <div/>
-                }</div>}
+                </div>}
             </div>
 
         );
