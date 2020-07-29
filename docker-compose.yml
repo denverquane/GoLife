@@ -1,0 +1,14 @@
+version: '3'
+services:
+  golife-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui.prod
+    ports:
+      - "80:80"
+  golife-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    ports:
+      - "5000:5000"

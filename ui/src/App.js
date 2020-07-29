@@ -9,6 +9,12 @@ const UNCONNECTED = 0;
 const CONNECTED = 1;
 const REGISTERED = 2;
 
+let BASE_URL = process.env.REACT_APP_SERVICE_URL;
+if (!BASE_URL || BASE_URL === "") {
+    console.log("REACT_APP_SERVICE_URL not provided; defaulting to localhost:5000")
+    BASE_URL = "localhost:5000"
+}
+
 class App extends Component {
     constructor(props) {
         super(props);
@@ -39,7 +45,7 @@ class App extends Component {
      * This function establishes the connect with the websocket and also ensures constant reconnection if connection closes
      */
     connect = () => {
-        var ws = new WebSocket("ws://localhost:5000/ws");
+        var ws = new WebSocket("ws://" + BASE_URL + "/ws");
         let that = this; // cache the this
         var connectInterval;
 

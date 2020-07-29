@@ -1,0 +1,8 @@
+FROM golang:latest
+
+WORKDIR /golife
+
+COPY . .
+RUN go build -o golife server/server.go
+
+CMD ["./golife"]
