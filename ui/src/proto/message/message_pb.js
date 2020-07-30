@@ -97,7 +97,7 @@ if (goog.DEBUG && !COMPILED) {
  * @constructor
  */
 proto.message.WorldData = function(opt_data) {
-  jspb.Message.initialize(this, opt_data, 0, -1, null, null);
+  jspb.Message.initialize(this, opt_data, 0, -1, proto.message.WorldData.repeatedFields_, null);
 };
 goog.inherits(proto.message.WorldData, jspb.Message);
 if (goog.DEBUG && !COMPILED) {
@@ -429,7 +429,7 @@ proto.message.Player.deserializeBinaryFromReader = function(msg, reader) {
       msg.setName(value);
       break;
     case 2:
-      var value = /** @type {number} */ (reader.readUint32());
+      var value = /** @type {number} */ (reader.readFixed32());
       msg.setColor(value);
       break;
     default:
@@ -470,7 +470,7 @@ proto.message.Player.serializeBinaryToWriter = function(message, writer) {
   }
   f = message.getColor();
   if (f !== 0) {
-    writer.writeUint32(
+    writer.writeFixed32(
       2,
       f
     );
@@ -497,7 +497,7 @@ proto.message.Player.prototype.setName = function(value) {
 
 
 /**
- * optional uint32 color = 2;
+ * optional fixed32 color = 2;
  * @return {number}
  */
 proto.message.Player.prototype.getColor = function() {
@@ -675,6 +675,13 @@ proto.message.Players.prototype.clearPlayersList = function() {
 
 
 
+/**
+ * List of repeated fields within this message type.
+ * @private {!Array<number>}
+ * @const
+ */
+proto.message.WorldData.repeatedFields_ = [1];
+
 
 
 if (jspb.Message.GENERATE_TO_OBJECT) {
@@ -706,7 +713,7 @@ proto.message.WorldData.prototype.toObject = function(opt_includeInstance) {
  */
 proto.message.WorldData.toObject = function(includeInstance, msg) {
   var f, obj = {
-    data: msg.getData_asB64(),
+    dataList: (f = jspb.Message.getRepeatedField(msg, 1)) == null ? undefined : f,
     tick: jspb.Message.getFieldWithDefault(msg, 2, 0),
     width: jspb.Message.getFieldWithDefault(msg, 3, 0),
     height: jspb.Message.getFieldWithDefault(msg, 4, 0)
@@ -747,8 +754,8 @@ proto.message.WorldData.deserializeBinaryFromReader = function(msg, reader) {
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {!Uint8Array} */ (reader.readBytes());
-      msg.setData(value);
+      var value = /** @type {!Array<number>} */ (reader.readPackedFixed32());
+      msg.setDataList(value);
       break;
     case 2:
       var value = /** @type {number} */ (reader.readInt64());
@@ -791,9 +798,9 @@ proto.message.WorldData.prototype.serializeBinary = function() {
  */
 proto.message.WorldData.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getData_asU8();
+  f = message.getDataList();
   if (f.length > 0) {
-    writer.writeBytes(
+    writer.writePackedFixed32(
       1,
       f
     );
@@ -823,44 +830,39 @@ proto.message.WorldData.serializeBinaryToWriter = function(message, writer) {
 
 
 /**
- * optional bytes data = 1;
- * @return {!(string|Uint8Array)}
+ * repeated fixed32 data = 1;
+ * @return {!Array<number>}
  */
-proto.message.WorldData.prototype.getData = function() {
-  return /** @type {!(string|Uint8Array)} */ (jspb.Message.getFieldWithDefault(this, 1, ""));
+proto.message.WorldData.prototype.getDataList = function() {
+  return /** @type {!Array<number>} */ (jspb.Message.getRepeatedField(this, 1));
 };
 
 
 /**
- * optional bytes data = 1;
- * This is a type-conversion wrapper around `getData()`
- * @return {string}
- */
-proto.message.WorldData.prototype.getData_asB64 = function() {
-  return /** @type {string} */ (jspb.Message.bytesAsB64(
-      this.getData()));
-};
-
-
-/**
- * optional bytes data = 1;
- * Note that Uint8Array is not supported on all browsers.
- * @see http://caniuse.com/Uint8Array
- * This is a type-conversion wrapper around `getData()`
- * @return {!Uint8Array}
- */
-proto.message.WorldData.prototype.getData_asU8 = function() {
-  return /** @type {!Uint8Array} */ (jspb.Message.bytesAsU8(
-      this.getData()));
-};
-
-
-/**
- * @param {!(string|Uint8Array)} value
+ * @param {!Array<number>} value
  * @return {!proto.message.WorldData} returns this
  */
-proto.message.WorldData.prototype.setData = function(value) {
-  return jspb.Message.setProto3BytesField(this, 1, value);
+proto.message.WorldData.prototype.setDataList = function(value) {
+  return jspb.Message.setField(this, 1, value || []);
+};
+
+
+/**
+ * @param {number} value
+ * @param {number=} opt_index
+ * @return {!proto.message.WorldData} returns this
+ */
+proto.message.WorldData.prototype.addData = function(value, opt_index) {
+  return jspb.Message.addToRepeatedField(this, 1, value, opt_index);
+};
+
+
+/**
+ * Clears the list making it empty but non-null.
+ * @return {!proto.message.WorldData} returns this
+ */
+proto.message.WorldData.prototype.clearDataList = function() {
+  return this.setDataList([]);
 };
 
 

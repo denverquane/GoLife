@@ -8,12 +8,12 @@ import (
 
 func TestDataGrid_NeighborsValue(t *testing.T) {
 	grid := make(DataGrid, 3)
-	grid[0] = make([]byte, 3)
-	grid[1] = make([]byte, 3)
-	grid[2] = make([]byte, 3)
+	grid[0] = make([]uint32, 3)
+	grid[1] = make([]uint32, 3)
+	grid[2] = make([]uint32, 3)
 
 	grid[0][0] = ALIVE
-	if grid.InnerNeighborsValue(1, 1) != 0b100_00_000 {
+	if grid.InnerNeighborsValue(1, 1) != 0b000_00_001 {
 		t.Fail()
 	}
 
@@ -23,7 +23,7 @@ func TestDataGrid_NeighborsValue(t *testing.T) {
 	}
 
 	grid[0][2] = ALIVE
-	if grid.InnerNeighborsValue(1, 1) != 0b101_00_001 {
+	if grid.InnerNeighborsValue(1, 1) != 0b100_00_101 {
 		t.Fail()
 	}
 
@@ -33,7 +33,7 @@ func TestDataGrid_NeighborsValue(t *testing.T) {
 	}
 
 	grid[0][1] = ALIVE
-	if grid.InnerNeighborsValue(1, 1) != 0b111_00_101 {
+	if grid.InnerNeighborsValue(1, 1) != 0b101_00_111 {
 		t.Fail()
 	}
 
@@ -43,7 +43,7 @@ func TestDataGrid_NeighborsValue(t *testing.T) {
 	}
 
 	grid[1][0] = ALIVE
-	if grid.InnerNeighborsValue(1, 1) != 0b111_10_111 {
+	if grid.InnerNeighborsValue(1, 1) != 0b111_01_111 {
 		t.Fail()
 	}
 
@@ -73,7 +73,7 @@ func TestWorld_Tick2(t *testing.T) {
 
 	world.Tick()
 
-	if (*world.data)[0][0]&ALIVE == ALIVE || (*world.data)[9][9]&ALIVE == ALIVE || (*world.data)[0][9]&ALIVE == ALIVE || (*world.data)[9][0]&ALIVE == ALIVE {
+	if (*world.data)[0][0]&ALIVE > 0 || (*world.data)[9][9]&ALIVE > 0 || (*world.data)[0][9]&ALIVE > 0 || (*world.data)[9][0]&ALIVE > 0 {
 		t.Fail()
 	}
 
@@ -81,7 +81,7 @@ func TestWorld_Tick2(t *testing.T) {
 	world.MarkAlive(0, 2)
 	world.MarkAlive(0, 3)
 	world.Tick()
-	if (*world.data)[0][2]&ALIVE != ALIVE || (*world.data)[1][2]&ALIVE != ALIVE {
+	if (*world.data)[0][2]&ALIVE == 0 || (*world.data)[1][2]&ALIVE == 0 {
 		t.Fail()
 	}
 }
