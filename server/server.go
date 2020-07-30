@@ -63,8 +63,10 @@ func simulationWorker(targetFps int64, msgChan <-chan simulation.SimulatorMessag
 				//TODO send message to dedicated worker to send the status probably?
 				//Consider race condition of message being received AFTER another tick...
 				broadcastWorld(&GlobalWorld)
+				//log.Print(GlobalWorld.ToString())
 				tickMs := float64(time.Now().UnixNano()-oldT) / NS_PER_MS
 				//log.Printf("%fms to tick; sleeping %fms\n", tickMs, msPerFrame - tickMs)
+				//time.Sleep(time.Millisecond * 500)
 				time.Sleep(time.Duration(NS_PER_MS * (msPerFrame - tickMs)))
 			} else {
 				broadcastWorld(&GlobalWorld)

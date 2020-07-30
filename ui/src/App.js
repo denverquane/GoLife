@@ -73,9 +73,9 @@ class App extends Component {
                         let WorldMessage = Messages.WorldData.deserializeBinary(message.getContent())
                         if (WorldMessage.getHeight() !== 0 && WorldMessage.getWidth() !== 0){
                             this.setState({boardWidth: WorldMessage.getWidth(), boardHeight: WorldMessage.getHeight(),
-                                boardData:  WorldMessage.getData(), boardTick: WorldMessage.getTick()})
+                                boardData:  WorldMessage.getDataList(), boardTick: WorldMessage.getTick()})
                         } else {
-                            this.setState({boardData:  WorldMessage.getData(), boardTick: WorldMessage.getTick()})
+                            this.setState({boardData:  WorldMessage.getDataList(), boardTick: WorldMessage.getTick()})
                         }
 
                         break;
@@ -142,17 +142,6 @@ class App extends Component {
         let bytes = msg.serializeBinary();
 
         this.state.ws.send(bytes);
-
-        // let cmdMsg = new Messages.Command();
-        // cmdMsg.setType(Messages.CommandType.TOGGLE_PAUSE)
-        // innerBytes = cmdMsg.serializeBinary()
-        // msg = new Messages.Message();
-        // msg.setType(Messages.MessageType.COMMAND);
-        // msg.setContent(innerBytes);
-        // bytes = msg.serializeBinary();
-        //
-        // this.state.ws.send(bytes);
-
     }
 
     onTogglePause() {

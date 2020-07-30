@@ -38,7 +38,7 @@ message Players {
 }
 
 message WorldData {
-  bytes data = 1;
+  repeated fixed32 data = 1;
   int64 tick = 2;
 
   int64 width = 3;
