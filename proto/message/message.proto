@@ -39,10 +39,11 @@ message Players {
 
 message WorldData {
   repeated fixed32 data = 1;
-  int64 tick = 2;
+  uint64 tick = 2;
 
-  int64 width = 3;
-  int64 height = 4;
+  uint32 width = 3;
+  uint32 height = 4;
+  bool paused = 5;
 }
 
 enum CommandType {
@@ -55,8 +56,8 @@ enum CommandType {
 
 message Command {
   CommandType type = 1;
-  int64 x = 2;
-  int64 y = 3;
+  uint32 x = 2;
+  uint32 y = 3;
   string text = 4;
 }
 

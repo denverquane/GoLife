@@ -46,7 +46,7 @@ var GlobalWorld simulation.World
 
 func simulationWorker(targetFps int64, msgChan <-chan simulation.SimulatorMessage) {
 	msPerFrame := (1.0 / float64(targetFps)) * 1000.0
-	GlobalWorld = simulation.NewConwayWorld(400, 225)
+	GlobalWorld = simulation.NewConwayWorld(200, 123)
 	GlobalWorld.MakeGliderGun(0, 0)
 	paused := false
 	for {
@@ -55,6 +55,10 @@ func simulationWorker(targetFps int64, msgChan <-chan simulation.SimulatorMessag
 			switch msg.Type {
 			case simulation.TOGGLE_PAUSE:
 				paused = !paused
+			case simulation.MARK_CELL:
+				if paused {
+					GlobalWorld.MarkAliveColor(msg.Y, msg.X, msg.Color)
+				}
 			}
 		default:
 			if !paused {
@@ -62,16 +66,16 @@ func simulationWorker(targetFps int64, msgChan <-chan simulation.SimulatorMessag
 				GlobalWorld.Tick()
 				//TODO send message to dedicated worker to send the status probably?
 				//Consider race condition of message being received AFTER another tick...
-				broadcastWorld(&GlobalWorld)
+				broadcastWorld(&GlobalWorld, false)
 				//log.Print(GlobalWorld.ToString())
 				tickMs := float64(time.Now().UnixNano()-oldT) / NS_PER_MS
 				//log.Printf("%fms to tick; sleeping %fms\n", tickMs, msPerFrame - tickMs)
 				//time.Sleep(time.Millisecond * 500)
 				time.Sleep(time.Duration(NS_PER_MS * (msPerFrame - tickMs)))
 			} else {
-				broadcastWorld(&GlobalWorld)
+				broadcastWorld(&GlobalWorld, true)
 				//log.Println("Simulation is paused; sleeping for 1000ms")
-				time.Sleep(time.Millisecond * 100)
+				time.Sleep(time.Millisecond * 50)
 			}
 		}
 	}
@@ -90,8 +94,8 @@ func sendFirstWorldMessage(client *websocket.Conn, world *simulation.World) {
 	}
 }
 
-func broadcastWorld(world *simulation.World) {
-	marshalled, err := world.ToMinProtoBytes()
+func broadcastWorld(world *simulation.World, paused bool) {
+	marshalled, err := world.ToMinProtoBytes(paused)
 	if err != nil {
 		log.Printf("Error in marshalling world: %s\n", err)
 	} else {
@@ -198,8 +202,18 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 				} else {
 					switch cmdMsg.Type {
 					case message.CommandType_TOGGLE_PAUSE:
+						//TODO when more players are online, we prob want a voting mechanism for pausing
 						log.Println("Sending toggle pause to channel")
 						SimulationChannel <- simulation.SimulatorMessage{Type: simulation.TOGGLE_PAUSE}
+					case message.CommandType_MARK_CELL:
+						player := clients[c]
+						SimulationChannel <- simulation.SimulatorMessage{
+							Type:  simulation.MARK_CELL,
+							X:     cmdMsg.X,
+							Y:     cmdMsg.Y,
+							Color: player.color,
+						}
+						log.Printf("Marking cell at (%d, %d) with color %32b", cmdMsg.X, cmdMsg.Y, player.color)
 					}
 				}
 			default:

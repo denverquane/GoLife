@@ -9,7 +9,10 @@ const UNCONNECTED = 0;
 const CONNECTED = 1;
 const REGISTERED = 2;
 
-const DEBUG_DONT_REGISTER_FOR_DATA = true;
+const CANVAS_BASE_WIDTH = 1600;
+const CANVAS_BASE_HEIGHT = 900;
+
+const DEBUG_DONT_REGISTER_FOR_DATA = false;
 
 let BASE_URL = process.env.REACT_APP_SERVICE_URL;
 if (!BASE_URL || BASE_URL === "") {
@@ -33,11 +36,13 @@ class App extends Component {
             boardData: null,
             boardTick: 0,
             boardWidth: 0,
-            boardHeight: 0
+            boardHeight: 0,
+            paused: false,
         };
         this.onChangeUsername = this.onChangeUsername.bind(this);
         this.onSubmitUsername = this.onSubmitUsername.bind(this);
         this.onTogglePause = this.onTogglePause.bind(this);
+        this.onCanvasClick = this.onCanvasClick.bind(this);
     }
 
     componentDidMount() {
@@ -73,9 +78,9 @@ class App extends Component {
                         let WorldMessage = Messages.WorldData.deserializeBinary(message.getContent())
                         if (WorldMessage.getHeight() !== 0 && WorldMessage.getWidth() !== 0){
                             this.setState({boardWidth: WorldMessage.getWidth(), boardHeight: WorldMessage.getHeight(),
-                                boardData:  WorldMessage.getDataList(), boardTick: WorldMessage.getTick()})
+                                boardData:  WorldMessage.getDataList(), boardTick: WorldMessage.getTick(), paused: WorldMessage.getPaused()})
                         } else {
-                            this.setState({boardData:  WorldMessage.getDataList(), boardTick: WorldMessage.getTick()})
+                            this.setState({boardData:  WorldMessage.getDataList(), boardTick: WorldMessage.getTick(), paused: WorldMessage.getPaused()})
                         }
 
                         break;
@@ -127,13 +132,14 @@ class App extends Component {
     };
 
     onChangeUsername(username) {
-        console.log("Change: " + username);
+        //console.log("Change: " + username);
         this.setState({localUsername: username});
     }
 
     onSubmitUsername(username) {
         let regMsg = new Messages.Player();
         regMsg.setName(username);
+        regMsg.setColor(0xFFFFFF00);
         let innerBytes = regMsg.serializeBinary();
 
         let msg = new Messages.Message();
@@ -155,6 +161,28 @@ class App extends Component {
 
         this.state.ws.send(bytes);
     }
+
+    onCanvasClick(event) {
+        let x = event.nativeEvent.offsetX;
+        let y = event.nativeEvent.offsetY;
+        let cellX =  Math.floor(x / ((this.state.boardWidth + CANVAS_BASE_WIDTH) / this.state.boardWidth))
+        let cellY =  Math.floor(y / ((this.state.boardHeight + CANVAS_BASE_HEIGHT) / this.state.boardHeight))
+        //console.log(cellX, cellY)
+
+        let cmdMsg = new Messages.Command();
+        cmdMsg.setType(Messages.CommandType.MARK_CELL)
+        cmdMsg.setX(cellX)
+        cmdMsg.setY(cellY)
+        let innerBytes = cmdMsg.serializeBinary()
+        let msg = new Messages.Message();
+        msg.setType(Messages.MessageType.COMMAND);
+        msg.setContent(innerBytes);
+        let bytes = msg.serializeBinary();
+
+        this.state.ws.send(bytes);
+    }
+
+
 
     render() {
   return (
@@ -197,7 +225,10 @@ class App extends Component {
                             Toggle Pause
                         </button>
                         <Game boardData={this.state.boardData} tick={this.state.boardTick}
-                            width={this.state.boardWidth} height={this.state.boardHeight}/>
+                            width={this.state.boardWidth} height={this.state.boardHeight} onClick={this.onCanvasClick}
+                            //we do this addition to guarantee every cell has a 1 pixel border
+                            canvasWidth={CANVAS_BASE_WIDTH+this.state.boardWidth} canvasHeight={CANVAS_BASE_HEIGHT+this.state.boardHeight}
+                        paused={this.state.paused}/>
                     </div>
                     : this.state.gameState !== UNCONNECTED ? <div>Please enter a username!</div> : <div/>
             }

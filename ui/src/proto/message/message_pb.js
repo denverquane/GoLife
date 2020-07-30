@@ -716,7 +716,8 @@ proto.message.WorldData.toObject = function(includeInstance, msg) {
     dataList: (f = jspb.Message.getRepeatedField(msg, 1)) == null ? undefined : f,
     tick: jspb.Message.getFieldWithDefault(msg, 2, 0),
     width: jspb.Message.getFieldWithDefault(msg, 3, 0),
-    height: jspb.Message.getFieldWithDefault(msg, 4, 0)
+    height: jspb.Message.getFieldWithDefault(msg, 4, 0),
+    paused: jspb.Message.getBooleanFieldWithDefault(msg, 5, false)
   };
 
   if (includeInstance) {
@@ -758,16 +759,20 @@ proto.message.WorldData.deserializeBinaryFromReader = function(msg, reader) {
       msg.setDataList(value);
       break;
     case 2:
-      var value = /** @type {number} */ (reader.readInt64());
+      var value = /** @type {number} */ (reader.readUint64());
       msg.setTick(value);
       break;
     case 3:
-      var value = /** @type {number} */ (reader.readInt64());
+      var value = /** @type {number} */ (reader.readUint32());
       msg.setWidth(value);
       break;
     case 4:
-      var value = /** @type {number} */ (reader.readInt64());
+      var value = /** @type {number} */ (reader.readUint32());
       msg.setHeight(value);
+      break;
+    case 5:
+      var value = /** @type {boolean} */ (reader.readBool());
+      msg.setPaused(value);
       break;
     default:
       reader.skipField();
@@ -807,22 +812,29 @@ proto.message.WorldData.serializeBinaryToWriter = function(message, writer) {
   }
   f = message.getTick();
   if (f !== 0) {
-    writer.writeInt64(
+    writer.writeUint64(
       2,
       f
     );
   }
   f = message.getWidth();
   if (f !== 0) {
-    writer.writeInt64(
+    writer.writeUint32(
       3,
       f
     );
   }
   f = message.getHeight();
   if (f !== 0) {
-    writer.writeInt64(
+    writer.writeUint32(
       4,
+      f
+    );
+  }
+  f = message.getPaused();
+  if (f) {
+    writer.writeBool(
+      5,
       f
     );
   }
@@ -867,7 +879,7 @@ proto.message.WorldData.prototype.clearDataList = function() {
 
 
 /**
- * optional int64 tick = 2;
+ * optional uint64 tick = 2;
  * @return {number}
  */
 proto.message.WorldData.prototype.getTick = function() {
@@ -885,7 +897,7 @@ proto.message.WorldData.prototype.setTick = function(value) {
 
 
 /**
- * optional int64 width = 3;
+ * optional uint32 width = 3;
  * @return {number}
  */
 proto.message.WorldData.prototype.getWidth = function() {
@@ -903,7 +915,7 @@ proto.message.WorldData.prototype.setWidth = function(value) {
 
 
 /**
- * optional int64 height = 4;
+ * optional uint32 height = 4;
  * @return {number}
  */
 proto.message.WorldData.prototype.getHeight = function() {
@@ -917,6 +929,24 @@ proto.message.WorldData.prototype.getHeight = function() {
  */
 proto.message.WorldData.prototype.setHeight = function(value) {
   return jspb.Message.setProto3IntField(this, 4, value);
+};
+
+
+/**
+ * optional bool paused = 5;
+ * @return {boolean}
+ */
+proto.message.WorldData.prototype.getPaused = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 5, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.message.WorldData} returns this
+ */
+proto.message.WorldData.prototype.setPaused = function(value) {
+  return jspb.Message.setProto3BooleanField(this, 5, value);
 };
 
 
@@ -997,11 +1027,11 @@ proto.message.Command.deserializeBinaryFromReader = function(msg, reader) {
       msg.setType(value);
       break;
     case 2:
-      var value = /** @type {number} */ (reader.readInt64());
+      var value = /** @type {number} */ (reader.readUint32());
       msg.setX(value);
       break;
     case 3:
-      var value = /** @type {number} */ (reader.readInt64());
+      var value = /** @type {number} */ (reader.readUint32());
       msg.setY(value);
       break;
     case 4:
@@ -1046,14 +1076,14 @@ proto.message.Command.serializeBinaryToWriter = function(message, writer) {
   }
   f = message.getX();
   if (f !== 0) {
-    writer.writeInt64(
+    writer.writeUint32(
       2,
       f
     );
   }
   f = message.getY();
   if (f !== 0) {
-    writer.writeInt64(
+    writer.writeUint32(
       3,
       f
     );
@@ -1087,7 +1117,7 @@ proto.message.Command.prototype.setType = function(value) {
 
 
 /**
- * optional int64 x = 2;
+ * optional uint32 x = 2;
  * @return {number}
  */
 proto.message.Command.prototype.getX = function() {
@@ -1105,7 +1135,7 @@ proto.message.Command.prototype.setX = function(value) {
 
 
 /**
- * optional int64 y = 3;
+ * optional uint32 y = 3;
  * @return {number}
  */
 proto.message.Command.prototype.getY = function() {

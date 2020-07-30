@@ -5,7 +5,7 @@ import (
 )
 
 //only call with inner coordinates (don't do perimeters)
-func (dg DataGrid) InnerNeighborsValue(y, x int64) byte {
+func (dg DataGrid) InnerNeighborsValue(y, x uint32) byte {
 	neighborState := byte(0)
 
 	neighborState |= isAlive(dg[y-1][x-1])      //NW
@@ -37,7 +37,7 @@ const (
 //So the neighborhood can be interpreted as so:
 //0b_W_SW_S_SE_E_NE_N_NW
 
-func (dg DataGrid) PerimeterNeighborsValue(dir Direction, y, x int64) byte {
+func (dg DataGrid) PerimeterNeighborsValue(dir Direction, y, x uint32) byte {
 	neighborState := byte(0)
 	switch dir {
 	case N:

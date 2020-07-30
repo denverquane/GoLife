@@ -10,36 +10,38 @@ import (
 type DataGrid [][]uint32
 
 const ALIVE uint32 = 0x00_00_00_FF
+const ALIVE_MASK uint32 = 0xFF_FF_FF_00
 const ALIVE_FULL uint32 = 0xFF_FF_FF_FF
 const DEAD uint32 = 0x00_00_00_00
 
 type World struct {
-	width  int64
-	height int64
+	width  uint32
+	height uint32
 	//indexed [y][x]!
 	data              *DataGrid
 	dataBuffer        *DataGrid
 	aliveRulesMapping map[byte]bool
 	deadRulesMapping  map[byte]bool
-	tick              int64
+	tick              uint64
 }
 
-func (world *World) GetDims() (height int64, width int64) {
+func (world *World) GetDims() (height uint32, width uint32) {
 	return world.height, world.width
 }
 
 func (world *World) GetFlattenedData() []uint32 {
 	data := make([]uint32, 0)
-	for y := int64(0); y < world.height; y++ {
+	for y := uint32(0); y < world.height; y++ {
 		data = append(data, (*world.data)[y]...)
 	}
 	return data
 }
 
-func (world *World) ToMinProtoBytes() ([]byte, error) {
+func (world *World) ToMinProtoBytes(paused bool) ([]byte, error) {
 	worldMsg := message.WorldData{
-		Data: world.GetFlattenedData(),
-		Tick: world.GetTick(),
+		Data:   world.GetFlattenedData(),
+		Tick:   world.GetTick(),
+		Paused: paused,
 	}
 	worldMsgMarshalled, err := proto.Marshal(&worldMsg)
 	if err != nil {
@@ -77,7 +79,7 @@ func (world *World) ToFullProtoBytes() ([]byte, error) {
 	}
 	return marshalled, nil
 }
-func NewConwayWorld(width, height int64) World {
+func NewConwayWorld(width, height uint32) World {
 	data := make(DataGrid, height)
 	for i, _ := range data {
 		data[i] = make([]uint32, width)
@@ -98,7 +100,7 @@ func NewConwayWorld(width, height int64) World {
 	}
 }
 
-func (world *World) GetTick() int64 {
+func (world *World) GetTick() uint64 {
 	return world.tick
 }
 
@@ -115,8 +117,8 @@ func Decay(cell uint32) uint32 {
 
 func (world *World) Tick() {
 	//only span the inner areas, don't do the perimeter yet
-	for y := int64(1); y < world.height-1; y++ {
-		for x := int64(1); x < world.width-1; x++ {
+	for y := uint32(1); y < world.height-1; y++ {
+		for x := uint32(1); x < world.width-1; x++ {
 			alive := isAliveBool((*world.data)[y][x])
 			neighborhood := world.data.InnerNeighborsValue(y, x)
 
@@ -137,8 +139,8 @@ func (world *World) Tick() {
 
 		}
 	}
-	y := int64(0)
-	for x := int64(1); x < world.width-1; x++ {
+	y := uint32(0)
+	for x := uint32(1); x < world.width-1; x++ {
 		alive := isAliveBool((*world.data)[y][x])
 		neighborhood := world.data.PerimeterNeighborsValue(N, y, x)
 		if alive {
@@ -158,7 +160,7 @@ func (world *World) Tick() {
 	}
 
 	y = world.height - 1
-	for x := int64(1); x < world.width-1; x++ {
+	for x := uint32(1); x < world.width-1; x++ {
 		alive := isAliveBool((*world.data)[y][x])
 		neighborhood := world.data.PerimeterNeighborsValue(S, y, x)
 		if alive {
@@ -178,7 +180,7 @@ func (world *World) Tick() {
 	}
 
 	x := world.width - 1
-	for y := int64(1); y < world.height-1; y++ {
+	for y := uint32(1); y < world.height-1; y++ {
 		alive := isAliveBool((*world.data)[y][x])
 		neighborhood := world.data.PerimeterNeighborsValue(E, y, x)
 		if alive {
@@ -197,8 +199,8 @@ func (world *World) Tick() {
 		}
 	}
 
-	x = int64(0)
-	for y := int64(1); y < world.height-1; y++ {
+	x = uint32(0)
+	for y := uint32(1); y < world.height-1; y++ {
 		alive := isAliveBool((*world.data)[y][x])
 		neighborhood := world.data.PerimeterNeighborsValue(W, y, x)
 		if alive {
@@ -299,8 +301,8 @@ func (world *World) Tick() {
 func (world *World) ToString() string {
 	buf := bytes.NewBuffer([]byte{})
 	buf.WriteString(fmt.Sprintf("Height: %d, Width: %d\n", world.height, world.width))
-	for y := int64(0); y < world.height; y++ {
-		for x := int64(0); x < world.width; x++ {
+	for y := uint32(0); y < world.height; y++ {
+		for x := uint32(0); x < world.width; x++ {
 			buf.WriteByte(' ')
 			if (*world.data)[y][x]&ALIVE > 0 {
 				buf.WriteString(fmt.Sprintf("%3d", (*world.data)[y][x]&ALIVE))
@@ -314,11 +316,15 @@ func (world *World) ToString() string {
 	return buf.String()
 }
 
-func (world *World) MarkAlive(y, x int64) {
+func (world *World) MarkAlive(y, x uint32) {
 	(*world.data)[y][x] = ALIVE_FULL
 }
 
-func (world *World) MakeGliderGun(y, x int64) {
+func (world *World) MarkAliveColor(y, x uint32, color uint32) {
+	(*world.data)[y][x] = ALIVE | (color & ALIVE_MASK)
+}
+
+func (world *World) MakeGliderGun(y, x uint32) {
 	(*world.data)[y+4][x] = ALIVE_FULL
 	(*world.data)[y+4][x+1] = ALIVE_FULL
 	(*world.data)[y+5][x] = ALIVE_FULL
@@ -362,8 +368,12 @@ func (world *World) MakeGliderGun(y, x int64) {
 
 const (
 	TOGGLE_PAUSE int = 1
+	MARK_CELL    int = 2
 )
 
 type SimulatorMessage struct {
-	Type int
+	Type  int
+	X     uint32
+	Y     uint32
+	Color uint32
 }

@@ -17,11 +17,29 @@ export default class Game extends Component {
         context.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-
+    equal(arr1, arr2) {
+        if (arr1.length !== arr2.length) {
+            return false
+        }
+        for (let i=0; i < arr1.length; i++) {
+            if (arr1[i] !== arr2[i]) {
+                return false
+            }
+        }
+        return true
+    }
 
     componentDidUpdate(prevProps, prevState, snapshot) {
-        if (this.props.tick !== prevProps.tick) {
+        if (this.props.paused !== prevProps.paused || this.props.width !== prevProps.width || this.props.tick !== prevProps.tick || !this.equal(this.props.boardData, prevProps.boardData)) {
+            console.log("Updating")
             const canvas = this.canvasRef.current;
+            if (this.props.paused !== prevProps.paused) {
+                if (!this.props.paused) {
+                    canvas.style.cursor = 'not-allowed';
+                } else {
+                    canvas.style.cursor = 'crosshair';
+                }
+            }
             const context = canvas.getContext('2d');
             context.fillRect(0, 0, canvas.width, canvas.height);
             let cWidth = canvas.width / this.props.width;
@@ -48,7 +66,7 @@ export default class Game extends Component {
     render() {
         return (
             <div className="Game" >
-                <canvas width={1600} height={900} ref={this.canvasRef}></canvas>
+                <canvas width={this.props.canvasWidth} height={this.props.canvasHeight} ref={this.canvasRef} onClick={this.props.onClick}></canvas>
                 Tick: {this.props.tick}
             </div>
         );
