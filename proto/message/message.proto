@@ -29,7 +29,8 @@ message Message {
 
 message Player {
   string name = 1;
-  uint32 color = 2;
+  //24bit color
+  fixed32 color = 2;
 }
 
 message Players {

@@ -46,7 +46,7 @@ var GlobalWorld simulation.World
 
 func simulationWorker(targetFps int64, msgChan <-chan simulation.SimulatorMessage) {
 	msPerFrame := (1.0 / float64(targetFps)) * 1000.0
-	GlobalWorld = simulation.NewConwayWorld(200, 200)
+	GlobalWorld = simulation.NewConwayWorld(400, 225)
 	GlobalWorld.MakeGliderGun(0, 0)
 	paused := false
 	for {
@@ -68,8 +68,8 @@ func simulationWorker(targetFps int64, msgChan <-chan simulation.SimulatorMessag
 				time.Sleep(time.Duration(NS_PER_MS * (msPerFrame - tickMs)))
 			} else {
 				broadcastWorld(&GlobalWorld)
-				log.Println("Simulation is paused; sleeping for 1000ms")
-				time.Sleep(time.Millisecond * 1000)
+				//log.Println("Simulation is paused; sleeping for 1000ms")
+				time.Sleep(time.Millisecond * 100)
 			}
 		}
 	}

@@ -37,6 +37,7 @@ class App extends Component {
         };
         this.onChangeUsername = this.onChangeUsername.bind(this);
         this.onSubmitUsername = this.onSubmitUsername.bind(this);
+        this.onTogglePause = this.onTogglePause.bind(this);
     }
 
     componentDidMount() {
@@ -154,6 +155,18 @@ class App extends Component {
 
     }
 
+    onTogglePause() {
+        let cmdMsg = new Messages.Command();
+        cmdMsg.setType(Messages.CommandType.TOGGLE_PAUSE)
+        let innerBytes = cmdMsg.serializeBinary()
+        let msg = new Messages.Message();
+        msg.setType(Messages.MessageType.COMMAND);
+        msg.setContent(innerBytes);
+        let bytes = msg.serializeBinary();
+
+        this.state.ws.send(bytes);
+    }
+
     render() {
   return (
     <div className="App">
@@ -188,8 +201,15 @@ class App extends Component {
         <div className="App-content">
             {
                 this.state.gameState === REGISTERED || (this.state.gameState === CONNECTED && DEBUG_DONT_REGISTER_FOR_DATA)
-                    ? <Game boardData={this.state.boardData} tick={this.state.boardTick}
+                    ? <div>
+                        <button onClick={() => {
+                            this.onTogglePause()
+                        }}>
+                            Toggle Pause
+                        </button>
+                        <Game boardData={this.state.boardData} tick={this.state.boardTick}
                             width={this.state.boardWidth} height={this.state.boardHeight}/>
+                    </div>
                     : this.state.gameState !== UNCONNECTED ? <div>Please enter a username!</div> : <div/>
             }
         </div>
