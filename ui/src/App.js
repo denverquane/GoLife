@@ -3,6 +3,7 @@ import logo from './logo.svg';
 import './App.css';
 import Game from './Game';
 import NameInput from './NameInput';
+import reactCSS from "reactcss";
 const Messages = require('./proto/message/message_pb');
 
 const UNCONNECTED = 0;
@@ -194,9 +195,23 @@ class App extends Component {
                   <div className="App-header-left">
                       <div>Players Online: </div>
                       {this.state.playersOnline
-                          ? <div>
+                          ? <div style={{alignSelf: "center"}}>
                               {this.state.playersOnline.map(function (item, i) {
-                                  return <div key={i}>{item.getName()}</div>
+                                  const colorString = item.getColor().toString(16).toUpperCase().substr(0, 6);
+                                  return <div key={i} style={{display: "flex", flexDirection: "row"}}>
+                                      <div>
+                                          <div style={ {
+                                              width: '45px',
+                                              height: '45px',
+                                              borderRadius: '2px',
+                                              background: `#${colorString}`,
+                                          }} />
+                                      </div>
+                                      <div style={{paddingLeft: '10px'}}>
+                                          {item.getName()}
+                                      </div>
+
+                                  </div>
                               })}
                             </div>
                           : <div/>}

@@ -13,6 +13,7 @@ export default class Game extends Component {
 
     componentDidMount() {
         const canvas = this.canvasRef.current;
+        canvas.style.cursor = 'not-allowed';
         const context = canvas.getContext('2d');
         context.fillRect(0, 0, canvas.width, canvas.height);
     }
