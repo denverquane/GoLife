@@ -136,10 +136,11 @@ class App extends Component {
         this.setState({localUsername: username});
     }
 
-    onSubmitUsername(username) {
+    onSubmitUsername(username, color) {
         let regMsg = new Messages.Player();
         regMsg.setName(username);
-        regMsg.setColor(0xFFFFFF00);
+        regMsg.setColor(color);
+        console.log("Submitting username " + username + " and color " + color)
         let innerBytes = regMsg.serializeBinary();
 
         let msg = new Messages.Message();
