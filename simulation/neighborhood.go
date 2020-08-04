@@ -21,165 +21,37 @@ func (dg DataGrid) InnerNeighborsValue(y, x uint32) byte {
 	return neighborState
 }
 
-func (dg DataGrid) NeighborsColorAverage(y, x uint32, neighbors byte) uint32 {
-	col := colorful.Color{
-		R: 0,
-		G: 0,
-		B: 0,
-	}
-	num := 0
-
-	if neighbors&NW_MASK > 0 {
-		cell := dg[y-1][x-1]
-		red, green, blue := rgbOfCell(cell)
-		col = colorful.Color{
-			R: red,
-			G: green,
-			B: blue,
+func (dg DataGrid) NeighborsColorMajority(y, x uint32, neighbors byte) uint32 {
+	colorCount := make(map[colorful.Color]int)
+	for i := N; i < 9; i++ {
+		if neighbors&DirectionMasks[i] > 0 {
+			xOff := XOffsets[i]
+			yOff := YOffsets[i]
+			cell := dg[int(y)+yOff][int(x)+xOff]
+			col := colorOfCell(cell)
+			colorCount[col]++
 		}
-		num++
 	}
-	if neighbors&N_MASK > 0 {
-		cell := dg[y-1][x]
-		red, green, blue := rgbOfCell(cell)
-		if num == 0 {
-			col = colorful.Color{
-				R: red,
-				G: green,
-				B: blue,
-			}
+	lastColor := colorful.Color{}
+	for col, count := range colorCount {
+		if count == 2 || count > 2 {
+			newRed := col.R * 255.0
+			newGreen := col.G * 255.0
+			newBlue := col.B * 255.0
+			return uint32(newRed)<<24 + uint32(newGreen)<<16 + uint32(newBlue)<<8 + ALIVE
 		} else {
-			col2 := colorful.Color{
-				R: red,
-				G: green,
-				B: blue,
-			}
-			col = col.BlendRgb(col2, 0.5)
+			lastColor = col
 		}
-		num++
 	}
-	if neighbors&NE_MASK > 0 {
-		cell := dg[y-1][x+1]
-		red, green, blue := rgbOfCell(cell)
-		if num == 0 {
-			col = colorful.Color{
-				R: red,
-				G: green,
-				B: blue,
-			}
-		} else {
-			col2 := colorful.Color{
-				R: red,
-				G: green,
-				B: blue,
-			}
-			col = col.BlendRgb(col2, 0.5)
-		}
-		num++
-	}
-	if neighbors&E_MASK > 0 {
-		cell := dg[y][x+1]
-		red, green, blue := rgbOfCell(cell)
-		if num == 0 {
-			col = colorful.Color{
-				R: red,
-				G: green,
-				B: blue,
-			}
-		} else {
-			col2 := colorful.Color{
-				R: red,
-				G: green,
-				B: blue,
-			}
-			col = col.BlendRgb(col2, 0.5)
-		}
-		num++
-	}
-	if neighbors&SE_MASK > 0 {
-		cell := dg[y+1][x+1]
-		red, green, blue := rgbOfCell(cell)
-		if num == 0 {
-			col = colorful.Color{
-				R: red,
-				G: green,
-				B: blue,
-			}
-		} else {
-			col2 := colorful.Color{
-				R: red,
-				G: green,
-				B: blue,
-			}
-			col = col.BlendRgb(col2, 0.5)
-		}
-		num++
-	}
-	if neighbors&S_MASK > 0 {
-		cell := dg[y+1][x]
-		red, green, blue := rgbOfCell(cell)
-		if num == 0 {
-			col = colorful.Color{
-				R: red,
-				G: green,
-				B: blue,
-			}
-		} else {
-			col2 := colorful.Color{
-				R: red,
-				G: green,
-				B: blue,
-			}
-			col = col.BlendRgb(col2, 0.5)
-		}
-		num++
-	}
-	if neighbors&SW_MASK > 0 {
-		cell := dg[y+1][x-1]
-		red, green, blue := rgbOfCell(cell)
-		if num == 0 {
-			col = colorful.Color{
-				R: red,
-				G: green,
-				B: blue,
-			}
-		} else {
-			col2 := colorful.Color{
-				R: red,
-				G: green,
-				B: blue,
-			}
-			col = col.BlendRgb(col2, 0.5)
-		}
-		num++
-	}
-	if neighbors&W_MASK > 0 {
-		cell := dg[y][x-1]
-		red, green, blue := rgbOfCell(cell)
-		if num == 0 {
-			col = colorful.Color{
-				R: red,
-				G: green,
-				B: blue,
-			}
-		} else {
-			col2 := colorful.Color{
-				R: red,
-				G: green,
-				B: blue,
-			}
-			col = col.BlendRgb(col2, 0.5)
-		}
-		num++
-	}
-	newRed := col.R * 255.0
-	newGreen := col.G * 255.0
-	newBlue := col.B * 255.0
+	//Just pick the last color in the map (maps aren't sorted, so this should be relatively random)
+	newRed := lastColor.R * 255.0
+	newGreen := lastColor.G * 255.0
+	newBlue := lastColor.B * 255.0
 	return uint32(newRed)<<24 + uint32(newGreen)<<16 + uint32(newBlue)<<8 + ALIVE
 }
 
-func rgbOfCell(cell uint32) (r, g, b float64) {
-	return float64((cell>>24)&ALIVE) / 255.0, float64((cell>>16)&ALIVE) / 255.0, float64((cell>>8)&ALIVE) / 255.0
+func colorOfCell(cell uint32) colorful.Color {
+	return colorful.Color{R: float64((cell>>24)&ALIVE) / 255.0, G: float64((cell>>16)&ALIVE) / 255.0, B: float64((cell>>8)&ALIVE) / 255.0}
 }
 
 type Direction byte
@@ -195,16 +67,36 @@ const (
 	NW Direction = 8
 )
 
-const (
-	NW_MASK byte = 0b0000_0001
-	N_MASK  byte = 0b0000_0010
-	NE_MASK byte = 0b0000_0100
-	E_MASK  byte = 0b0000_1000
-	SE_MASK byte = 0b0001_0000
-	S_MASK  byte = 0b0010_0000
-	SW_MASK byte = 0b0100_0000
-	W_MASK  byte = 0b1000_0000
-)
+var XOffsets = map[Direction]int{
+	NW: -1,
+	N:  0,
+	NE: 1,
+	E:  1,
+	SE: 1,
+	S:  0,
+	SW: -1,
+	W:  -1,
+}
+var YOffsets = map[Direction]int{
+	NW: -1,
+	N:  -1,
+	NE: -1,
+	E:  0,
+	SE: 1,
+	S:  1,
+	SW: 1,
+	W:  0,
+}
+var DirectionMasks = map[Direction]byte{
+	NW: 0b0000_0001,
+	N:  0b0000_0010,
+	NE: 0b0000_0100,
+	E:  0b0000_1000,
+	SE: 0b0001_0000,
+	S:  0b0010_0000,
+	SW: 0b0100_0000,
+	W:  0b1000_0000,
+}
 
 //Northwest is the right-most bit of the byte, rotating around clockwise until the left side of the byte
 //So the neighborhood can be interpreted as so:

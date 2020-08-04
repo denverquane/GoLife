@@ -130,7 +130,7 @@ func (world *World) Tick() {
 				}
 			} else {
 				if world.deadRulesMapping[neighborhood] {
-					(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorAverage(y, x, neighborhood)
+					(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
 				} else {
 					(*world.dataBuffer)[y][x] = DEAD
 				}
@@ -150,7 +150,7 @@ func (world *World) Tick() {
 			}
 		} else {
 			if world.deadRulesMapping[neighborhood] {
-				(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorAverage(y, x, neighborhood)
+				(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
 			} else {
 				(*world.dataBuffer)[y][x] = DEAD
 			}
@@ -169,7 +169,7 @@ func (world *World) Tick() {
 			}
 		} else {
 			if world.deadRulesMapping[neighborhood] {
-				(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorAverage(y, x, neighborhood)
+				(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
 			} else {
 				(*world.dataBuffer)[y][x] = DEAD
 			}
@@ -188,7 +188,7 @@ func (world *World) Tick() {
 			}
 		} else {
 			if world.deadRulesMapping[neighborhood] {
-				(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorAverage(y, x, neighborhood)
+				(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
 			} else {
 				(*world.dataBuffer)[y][x] = DEAD
 			}
@@ -207,7 +207,7 @@ func (world *World) Tick() {
 			}
 		} else {
 			if world.deadRulesMapping[neighborhood] {
-				(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorAverage(y, x, neighborhood)
+				(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
 			} else {
 				(*world.dataBuffer)[y][x] = DEAD
 			}
@@ -226,7 +226,7 @@ func (world *World) Tick() {
 		}
 	} else {
 		if world.deadRulesMapping[neighborhood] {
-			(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorAverage(y, x, neighborhood)
+			(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
 		} else {
 			(*world.dataBuffer)[y][x] = DEAD
 		}
@@ -243,7 +243,7 @@ func (world *World) Tick() {
 		}
 	} else {
 		if world.deadRulesMapping[neighborhood] {
-			(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorAverage(y, x, neighborhood)
+			(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
 		} else {
 			(*world.dataBuffer)[y][x] = DEAD
 		}
@@ -260,7 +260,7 @@ func (world *World) Tick() {
 		}
 	} else {
 		if world.deadRulesMapping[neighborhood] {
-			(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorAverage(y, x, neighborhood)
+			(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
 		} else {
 			(*world.dataBuffer)[y][x] = DEAD
 		}
@@ -277,7 +277,7 @@ func (world *World) Tick() {
 		}
 	} else {
 		if world.deadRulesMapping[neighborhood] {
-			(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorAverage(y, x, neighborhood)
+			(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
 		} else {
 			(*world.dataBuffer)[y][x] = DEAD
 		}
