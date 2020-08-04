@@ -27,8 +27,23 @@ var clients = make(map[*websocket.Conn]Player)
 var SimulationChannel = make(chan simulation.SimulatorMessage)
 
 var addr = flag.String("addr", ":5000", "http service address")
+var RleMap = make(map[string]simulation.RLE)
 
 func main() {
+	rle, err := simulation.LoadRLE("./data/glider.rle")
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		RleMap["glider"] = rle
+	}
+
+	rle, err = simulation.LoadRLE("./data/pufferfish.rle")
+	if err != nil {
+		log.Fatal(err)
+	} else {
+		RleMap["pufferfish"] = rle
+	}
+
 	flag.Parse()
 	log.SetFlags(0)
 
@@ -47,7 +62,9 @@ var GlobalWorld simulation.World
 func simulationWorker(targetFps int64, msgChan <-chan simulation.SimulatorMessage) {
 	msPerFrame := (1.0 / float64(targetFps)) * 1000.0
 	GlobalWorld = simulation.NewConwayWorld(200, 123)
-	GlobalWorld.MakeGliderGun(0, 0)
+	GlobalWorld.PlaceRLEAtCoords(RleMap["glider"], 0, 0, simulation.ALIVE_FULL)
+
+	GlobalWorld.PlaceRLEAtCoords(RleMap["pufferfish"], 100, 150, simulation.ALIVE_FULL)
 	paused := false
 	for {
 		select {
@@ -61,7 +78,7 @@ func simulationWorker(targetFps int64, msgChan <-chan simulation.SimulatorMessag
 				}
 			}
 		default:
-			if !paused {
+			if !paused && len(clients) > 0 {
 				oldT := time.Now().UnixNano()
 				GlobalWorld.Tick()
 				//TODO send message to dedicated worker to send the status probably?
