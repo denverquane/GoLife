@@ -112,7 +112,7 @@ class App extends Component {
                 )} second.`,
                 e.reason
             );
-            this.setState({gameState: UNCONNECTED})
+            this.setState({gameState: UNCONNECTED, rles: null, remoteUsername: null, localUsername: null, playersOnline: null})
 
             that.timeout = that.timeout + that.timeout; //increment retry interval
             connectInterval = setTimeout(this.check, Math.min(10000, that.timeout)); //call check function after timeout
