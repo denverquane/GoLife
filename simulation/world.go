@@ -325,48 +325,6 @@ func (world *World) MarkAliveColor(y, x uint32, color uint32) {
 	(*world.data)[y][x] = ALIVE | (color & ALIVE_MASK)
 }
 
-func (world *World) MakeGliderGun(y, x uint32) {
-	(*world.data)[y+4][x] = ALIVE_FULL
-	(*world.data)[y+4][x+1] = ALIVE_FULL
-	(*world.data)[y+5][x] = ALIVE_FULL
-	(*world.data)[y+5][x+1] = ALIVE_FULL
-
-	(*world.data)[y+2][x+12] = ALIVE_FULL
-	(*world.data)[y+2][x+13] = ALIVE_FULL
-	(*world.data)[y+3][x+11] = ALIVE_FULL
-	(*world.data)[y+3][x+15] = ALIVE_FULL
-	(*world.data)[y+4][x+10] = ALIVE_FULL
-	(*world.data)[y+4][x+16] = ALIVE_FULL
-	(*world.data)[y+5][x+10] = ALIVE_FULL
-	(*world.data)[y+5][x+14] = ALIVE_FULL
-	(*world.data)[y+5][x+16] = ALIVE_FULL
-	(*world.data)[y+5][x+17] = ALIVE_FULL
-	(*world.data)[y+6][x+10] = ALIVE_FULL
-	(*world.data)[y+6][x+16] = ALIVE_FULL
-	(*world.data)[y+7][x+11] = ALIVE_FULL
-	(*world.data)[y+7][x+15] = ALIVE_FULL
-	(*world.data)[y+8][x+12] = ALIVE_FULL
-	(*world.data)[y+8][x+13] = ALIVE_FULL
-
-	(*world.data)[y][x+24] = ALIVE_FULL
-	(*world.data)[y+1][x+22] = ALIVE_FULL
-	(*world.data)[y+1][x+24] = ALIVE_FULL
-	(*world.data)[y+2][x+20] = ALIVE_FULL
-	(*world.data)[y+2][x+21] = ALIVE_FULL
-	(*world.data)[y+3][x+20] = ALIVE_FULL
-	(*world.data)[y+3][x+21] = ALIVE_FULL
-	(*world.data)[y+4][x+20] = ALIVE_FULL
-	(*world.data)[y+4][x+21] = ALIVE_FULL
-	(*world.data)[y+5][x+22] = ALIVE_FULL
-	(*world.data)[y+5][x+24] = ALIVE_FULL
-	(*world.data)[y+6][x+24] = ALIVE_FULL
-
-	(*world.data)[y+2][x+34] = ALIVE_FULL
-	(*world.data)[y+2][x+35] = ALIVE_FULL
-	(*world.data)[y+3][x+34] = ALIVE_FULL
-	(*world.data)[y+3][x+35] = ALIVE_FULL
-}
-
 const (
 	TOGGLE_PAUSE int = 1
 	MARK_CELL    int = 2

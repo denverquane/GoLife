@@ -10,8 +10,8 @@ const UNCONNECTED = 0;
 const CONNECTED = 1;
 const REGISTERED = 2;
 
-const CANVAS_BASE_WIDTH = 1600;
-const CANVAS_BASE_HEIGHT = 900;
+const CANVAS_BASE_WIDTH = 800;
+const CANVAS_BASE_HEIGHT = 800;
 
 const DEBUG_DONT_REGISTER_FOR_DATA = false;
 
@@ -30,6 +30,7 @@ class App extends Component {
             playersOnline: null,
             localUsername: null,
             remoteUsername: null,
+            rles: null,
 
             wsMessage: null,
 
@@ -44,6 +45,7 @@ class App extends Component {
         this.onSubmitUsername = this.onSubmitUsername.bind(this);
         this.onTogglePause = this.onTogglePause.bind(this);
         this.onCanvasClick = this.onCanvasClick.bind(this);
+        this.onPlaceRLE = this.onPlaceRLE.bind(this);
     }
 
     componentDidMount() {
@@ -92,6 +94,10 @@ class App extends Component {
                     case Messages.MessageType.PLAYERS:
                         let PlayersMessage = Messages.Players.deserializeBinary(message.getContent())
                         this.setState({playersOnline: PlayersMessage.getPlayersList()})
+                        break;
+                    case Messages.MessageType.RLE_OPTIONS:
+                        let RlesMessage = Messages.RLEs.deserializeBinary(message.getContent())
+                        this.setState({rles: RlesMessage.getRlesList()})
                         break;
                 }
             });
@@ -155,6 +161,21 @@ class App extends Component {
     onTogglePause() {
         let cmdMsg = new Messages.Command();
         cmdMsg.setType(Messages.CommandType.TOGGLE_PAUSE)
+        let innerBytes = cmdMsg.serializeBinary()
+        let msg = new Messages.Message();
+        msg.setType(Messages.MessageType.COMMAND);
+        msg.setContent(innerBytes);
+        let bytes = msg.serializeBinary();
+
+        this.state.ws.send(bytes);
+    }
+
+    onPlaceRLE(name) {
+        let cmdMsg = new Messages.Command();
+        cmdMsg.setType(Messages.CommandType.PLACE_RLE);
+        cmdMsg.setText(name);
+        cmdMsg.setX(50);
+        cmdMsg.setY(50);
         let innerBytes = cmdMsg.serializeBinary()
         let msg = new Messages.Message();
         msg.setType(Messages.MessageType.COMMAND);
@@ -228,6 +249,27 @@ class App extends Component {
               <NameInput isDisabled={this.state.gameState === UNCONNECTED || this.state.localUsername === this.state.remoteUsername}
                          onSubmit={this.onSubmitUsername}  onChange={this.onChangeUsername}
               nameResponse={this.state.remoteUsername}/>
+              {this.state.rles ? <div>
+                  <div>
+                      Patterns available:
+                  </div>
+                  {this.state.rles.map((item, i) => {
+                      return <div key={i} style={{display: "flex", flexDirection: "row"}}>
+                          <div>
+                              {/*<div style={ {*/}
+                              {/*    width: '45px',*/}
+                              {/*    height: '45px',*/}
+                              {/*    borderRadius: '2px',*/}
+                              {/*    background: `#${colorString}`,*/}
+                              {/*}} />*/}
+                          </div>
+                          <button onClick={() => this.onPlaceRLE(item.getName())}>
+                              {item.getName()}
+                          </button>
+
+                      </div>
+                  })}</div>: <div/>
+              }
           </div>
 
       </header>

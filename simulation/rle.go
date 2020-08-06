@@ -3,6 +3,8 @@ package simulation
 import (
 	"bytes"
 	"fmt"
+	"github.com/denverquane/golife/proto/message"
+	"google.golang.org/protobuf/proto"
 	"io/ioutil"
 	"log"
 	"os"
@@ -138,4 +140,45 @@ func (rle RLE) ToString() string {
 		buf.WriteString("\n")
 	}
 	return buf.String()
+}
+
+func (rle RLE) toProto() *message.RLE {
+	//TODO better packing? 8 cells per byte, not 1?
+	data := make([]byte, rle.height*rle.width)
+	idx := 0
+	for _, row := range rle.data {
+		for _, cell := range row {
+			if cell {
+				data[idx] = 0xFF
+			} else {
+				data[idx] = 0x00
+			}
+			idx++
+		}
+	}
+	return &message.RLE{
+		Name:   rle.name,
+		Width:  rle.width,
+		Height: rle.height,
+		Data:   data,
+	}
+}
+
+func ToRleBytes(rles map[string]RLE) []byte {
+	rleArr := make([]RLE, len(rles))
+	idx := 0
+	for name, rle := range rles {
+		rle.name = name
+		rleArr[idx] = rle
+		idx++
+	}
+	msg := message.RLEs{}
+	for _, rle := range rleArr {
+		msg.Rles = append(msg.Rles, rle.toProto())
+	}
+	rlesMarshalled, err := proto.Marshal(&msg)
+	if err != nil {
+		log.Println(err)
+	}
+	return rlesMarshalled
 }

@@ -8,6 +8,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -23,6 +24,7 @@ type Player struct {
 }
 
 var clients = make(map[*websocket.Conn]Player)
+var clientsLock = sync.RWMutex{}
 
 var SimulationChannel = make(chan simulation.SimulatorMessage)
 
@@ -51,7 +53,7 @@ func main() {
 }
 
 func Run(addr *string) {
-	go simulationWorker(60, SimulationChannel)
+	go simulationWorker(30, SimulationChannel)
 
 	http.HandleFunc("/ws", wsHandler)
 	log.Fatal(http.ListenAndServe(*addr, nil))
@@ -61,10 +63,10 @@ var GlobalWorld simulation.World
 
 func simulationWorker(targetFps int64, msgChan <-chan simulation.SimulatorMessage) {
 	msPerFrame := (1.0 / float64(targetFps)) * 1000.0
-	GlobalWorld = simulation.NewConwayWorld(200, 123)
+	GlobalWorld = simulation.NewConwayWorld(200, 200)
 	GlobalWorld.PlaceRLEAtCoords(RleMap["glider"], 0, 0, simulation.ALIVE_FULL)
 
-	GlobalWorld.PlaceRLEAtCoords(RleMap["pufferfish"], 100, 150, simulation.ALIVE_FULL)
+	//GlobalWorld.PlaceRLEAtCoords(RleMap["pufferfish"], 100, 150, simulation.ALIVE_FULL)
 	paused := false
 	for {
 		select {
@@ -119,11 +121,30 @@ func sendFirstWorldMessage(client *websocket.Conn, world *simulation.World) {
 	}
 }
 
+func sendRLEs(client *websocket.Conn, rles map[string]simulation.RLE) {
+	rlesBytes := simulation.ToRleBytes(rles)
+	msg := message.Message{
+		Type:    message.MessageType_RLE_OPTIONS,
+		Content: rlesBytes,
+	}
+	msgBytes, err := proto.Marshal(&msg)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	err = client.WriteMessage(websocket.BinaryMessage, msgBytes)
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func broadcastWorld(world *simulation.World, paused bool) {
 	marshalled, err := world.ToMinProtoBytes(paused)
 	if err != nil {
 		log.Printf("Error in marshalling world: %s\n", err)
 	} else {
+		clientsLock.RLock()
 		for client, player := range clients {
 			if player.name != "" || DEBUG_BROADCAST_NON_REGISTERED {
 				err := client.WriteMessage(websocket.BinaryMessage, marshalled)
@@ -132,17 +153,20 @@ func broadcastWorld(world *simulation.World, paused bool) {
 				}
 			}
 		}
+		clientsLock.RUnlock()
 	}
 }
 
 func broadcastPlayers() {
 	players := message.Players{}
+	clientsLock.RLock()
 	for _, v := range clients {
 		players.Players = append(players.Players, &message.Player{
 			Name:  v.name,
 			Color: v.color,
 		})
 	}
+	clientsLock.RUnlock()
 	playersMarshalled, err := proto.Marshal(&players)
 	if err != nil {
 		log.Println(err)
@@ -157,12 +181,14 @@ func broadcastPlayers() {
 		log.Println(err)
 		return
 	}
+	clientsLock.RLock()
 	for client := range clients {
 		err := client.WriteMessage(websocket.BinaryMessage, marshalled)
 		if err != nil {
 			log.Println(err)
 		}
 	}
+	clientsLock.RUnlock()
 }
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
@@ -175,14 +201,19 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		log.Print("upgrade:", err)
 		return
 	}
+	clientsLock.Lock()
 	clients[c] = Player{
 		name:  "",
 		color: 0,
 	}
+	clientsLock.Unlock()
 
 	c.SetCloseHandler(func(code int, text string) error {
 		log.Printf("Client disconnected with code %d and text: %s", code, text)
+		clientsLock.Lock()
 		delete(clients, c)
+		clientsLock.Unlock()
+		broadcastPlayers()
 		return nil
 	})
 
@@ -218,6 +249,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 					}
 					broadcastPlayers()
 					sendFirstWorldMessage(c, &GlobalWorld)
+					sendRLEs(c, RleMap)
 				}
 			case message.MessageType_COMMAND:
 				cmdMsg := message.Command{}
@@ -244,6 +276,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 					case message.CommandType_PLACE_RLE:
 						player := clients[c]
 						//TODO Here we validate the parameters of the msg
+						log.Println("Received RLE")
 						SimulationChannel <- simulation.SimulatorMessage{
 							Type:  simulation.PLACE_RLE,
 							X:     cmdMsg.X,

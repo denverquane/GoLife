@@ -19,6 +19,9 @@ enum MessageType {
 
   //A chat message that has gone out
   CHAT_LOG = 5;
+
+  //All available RLEs that the server knows about
+  RLE_OPTIONS = 6;
 }
 
 message Message {
@@ -73,4 +76,15 @@ message Response {
 message Chat {
   Player player = 1;
   string text = 2;
+}
+
+message RLEs {
+  repeated RLE rles = 1;
+}
+
+message RLE {
+  string name = 1;
+  uint32 width = 2;
+  uint32 height = 3;
+  bytes data = 4;
 }
