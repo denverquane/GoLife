@@ -1528,10 +1528,9 @@ proto.message.MessageType = {
  */
 proto.message.CommandType = {
   MARK_CELL: 0,
-  POST_CHAT: 1,
+  PLACE_RLE: 1,
   TOGGLE_PAUSE: 2,
-  CHANGE_COLOR: 3,
-  CHANGE_NAME: 4
+  POST_CHAT: 3
 };
 
 /**

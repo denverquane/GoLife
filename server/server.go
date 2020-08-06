@@ -76,6 +76,14 @@ func simulationWorker(targetFps int64, msgChan <-chan simulation.SimulatorMessag
 				if paused {
 					GlobalWorld.MarkAliveColor(msg.Y, msg.X, msg.Color)
 				}
+			case simulation.PLACE_RLE:
+				if paused {
+					for name, rle := range RleMap {
+						if name == msg.Info {
+							GlobalWorld.PlaceRLEAtCoords(rle, msg.Y, msg.X, msg.Color)
+						}
+					}
+				}
 			}
 		default:
 			if !paused && len(clients) > 0 {
@@ -224,6 +232,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 						SimulationChannel <- simulation.SimulatorMessage{Type: simulation.TOGGLE_PAUSE}
 					case message.CommandType_MARK_CELL:
 						player := clients[c]
+						//TODO Here we validate the parameters of the msg
 						SimulationChannel <- simulation.SimulatorMessage{
 							Type:  simulation.MARK_CELL,
 							X:     cmdMsg.X,
@@ -231,6 +240,17 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 							Color: player.color,
 						}
 						log.Printf("Marking cell at (%d, %d) with color %32b", cmdMsg.X, cmdMsg.Y, player.color)
+
+					case message.CommandType_PLACE_RLE:
+						player := clients[c]
+						//TODO Here we validate the parameters of the msg
+						SimulationChannel <- simulation.SimulatorMessage{
+							Type:  simulation.PLACE_RLE,
+							X:     cmdMsg.X,
+							Y:     cmdMsg.Y,
+							Color: player.color,
+							Info:  cmdMsg.Text,
+						}
 					}
 				}
 			default:

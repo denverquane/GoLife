@@ -370,6 +370,7 @@ func (world *World) MakeGliderGun(y, x uint32) {
 const (
 	TOGGLE_PAUSE int = 1
 	MARK_CELL    int = 2
+	PLACE_RLE    int = 3
 )
 
 type SimulatorMessage struct {
@@ -377,4 +378,6 @@ type SimulatorMessage struct {
 	X     uint32
 	Y     uint32
 	Color uint32
+
+	Info string
 }
