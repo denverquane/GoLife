@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import reactCSS from 'reactcss'
-import { CirclePicker } from 'react-color';
+import {CirclePicker} from 'react-color';
 
 import './NameInput.css';
 
@@ -17,22 +17,23 @@ class NameInput extends Component {
                 g: '112',
                 b: '19',
                 a: '1',
-            },};
+            },
+        };
 
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
     }
 
     handleClick = () => {
-        this.setState({ displayColorPicker: !this.state.displayColorPicker })
+        this.setState({displayColorPicker: !this.state.displayColorPicker})
     };
 
     handleClose = () => {
-        this.setState({ displayColorPicker: false })
+        this.setState({displayColorPicker: false})
     };
 
     handleChangeColor = (color) => {
-        this.setState({ color: color.rgb })
+        this.setState({color: color.rgb})
         this.handleClose()
     };
 
@@ -55,9 +56,9 @@ class NameInput extends Component {
             'default': {
                 color: {
                     width: '36px',
-                    height: '14px',
+                    height: '36px',
                     borderRadius: '2px',
-                    background: `rgb(${ this.state.color.r }, ${ this.state.color.g }, ${ this.state.color.b })`,
+                    background: `rgb(${this.state.color.r}, ${this.state.color.g}, ${this.state.color.b})`,
                 },
                 swatch: {
                     padding: '5px',
@@ -83,22 +84,25 @@ class NameInput extends Component {
             },
         });
         return (
-            <div>
-                Username:
-                {this.props.nameResponse ?
-                <div>{this.props.nameResponse}</div>
-                : <div><form className="name-input-form" onSubmit={this.handleSubmit}>
-                    <input className="name-input-input" type="text" value={this.state.value} onChange={this.handleChange} />
-                        <div style={ styles.swatch } onClick={ this.handleClick }>
-                            <div style={ styles.color } />
+            <div style={{display: "flex", flexDirection: "column"}}>
+                <form className="name-input-form" onSubmit={this.handleSubmit}>
+                    <div style={{display: "flex", flexDirection: "row"}}>
+                        Username:
+                        <input className="name-input-input" type="text" value={this.state.value}
+                               onChange={this.handleChange}/>
+                    </div>
+                    <div style={{display: "flex", flexDirection: "row"}}>
+                        Color:
+                        <div style={styles.swatch} onClick={this.handleClick}>
+                            <div style={styles.color}/>
                         </div>
-                        { this.state.displayColorPicker ? <div style={ styles.popover }>
-                            <div style={ styles.cover } onClick={ this.handleClose }/>
-                            <CirclePicker color={ this.state.color } onChange={ this.handleChangeColor } />
-                        </div> : null }
-                    <input className="name-input-button" disabled={this.props.isDisabled} type="submit" value="Submit" />
+                        {this.state.displayColorPicker ? <div style={styles.popover}>
+                            <div style={styles.cover} onClick={this.handleClose}/>
+                            <CirclePicker color={this.state.color} onChange={this.handleChangeColor}/>
+                        </div> : null}
+                    </div>
+                    <input className="name-input-button" disabled={this.props.isDisabled} type="submit" value="Submit"/>
                 </form>
-                </div>}
             </div>
 
         );

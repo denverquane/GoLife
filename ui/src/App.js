@@ -1,17 +1,16 @@
 import React, {Component} from 'react';
-import logo from './logo.svg';
 import './App.css';
 import Game from './Game';
 import NameInput from './NameInput';
-import reactCSS from "reactcss";
+
 const Messages = require('./proto/message/message_pb');
 
 const UNCONNECTED = 0;
 const CONNECTED = 1;
 const REGISTERED = 2;
 
-const CANVAS_BASE_WIDTH = 800;
-const CANVAS_BASE_HEIGHT = 800;
+export const CANVAS_BASE_WIDTH = 800;
+export const CANVAS_BASE_HEIGHT = 800;
 
 const DEBUG_DONT_REGISTER_FOR_DATA = false;
 
@@ -30,7 +29,9 @@ class App extends Component {
             playersOnline: null,
             localUsername: null,
             remoteUsername: null,
+            color: null,
             rles: null,
+            currentRLE: null,
 
             wsMessage: null,
 
@@ -45,7 +46,7 @@ class App extends Component {
         this.onSubmitUsername = this.onSubmitUsername.bind(this);
         this.onTogglePause = this.onTogglePause.bind(this);
         this.onCanvasClick = this.onCanvasClick.bind(this);
-        this.onPlaceRLE = this.onPlaceRLE.bind(this);
+        this.onEnterRLEMode = this.onEnterRLEMode.bind(this);
     }
 
     componentDidMount() {
@@ -67,7 +68,7 @@ class App extends Component {
         ws.onopen = () => {
             console.log("connected websocket main component");
 
-            this.setState({ ws: ws, gameState: CONNECTED });
+            this.setState({ws: ws, gameState: CONNECTED});
 
             that.timeout = 250; // reset timer to 250 on open of websocket connection
             clearTimeout(connectInterval); // clear Interval on on open of websocket connection
@@ -76,14 +77,23 @@ class App extends Component {
         ws.onmessage = (event) => {
             event.data.arrayBuffer().then(buffer => {
                 let message = Messages.Message.deserializeBinary(new Uint8Array(buffer));
-                switch(message.getType()) {
+                switch (message.getType()) {
                     case Messages.MessageType.WORLD_DATA:
                         let WorldMessage = Messages.WorldData.deserializeBinary(message.getContent())
-                        if (WorldMessage.getHeight() !== 0 && WorldMessage.getWidth() !== 0){
-                            this.setState({boardWidth: WorldMessage.getWidth(), boardHeight: WorldMessage.getHeight(),
-                                boardData:  WorldMessage.getDataList(), boardTick: WorldMessage.getTick(), paused: WorldMessage.getPaused()})
+                        if (WorldMessage.getHeight() !== 0 && WorldMessage.getWidth() !== 0) {
+                            this.setState({
+                                boardWidth: WorldMessage.getWidth(),
+                                boardHeight: WorldMessage.getHeight(),
+                                boardData: WorldMessage.getDataList(),
+                                boardTick: WorldMessage.getTick(),
+                                paused: WorldMessage.getPaused()
+                            })
                         } else {
-                            this.setState({boardData:  WorldMessage.getDataList(), boardTick: WorldMessage.getTick(), paused: WorldMessage.getPaused()})
+                            this.setState({
+                                boardData: WorldMessage.getDataList(),
+                                boardTick: WorldMessage.getTick(),
+                                paused: WorldMessage.getPaused()
+                            })
                         }
 
                         break;
@@ -112,7 +122,13 @@ class App extends Component {
                 )} second.`,
                 e.reason
             );
-            this.setState({gameState: UNCONNECTED, rles: null, remoteUsername: null, localUsername: null, playersOnline: null})
+            this.setState({
+                gameState: UNCONNECTED,
+                rles: null,
+                remoteUsername: null,
+                localUsername: null,
+                playersOnline: null
+            })
 
             that.timeout = that.timeout + that.timeout; //increment retry interval
             connectInterval = setTimeout(this.check, Math.min(10000, that.timeout)); //call check function after timeout
@@ -134,7 +150,7 @@ class App extends Component {
      * utilized by the @function connect to check if the connection is close, if so attempts to reconnect
      */
     check = () => {
-        const { ws } = this.state;
+        const {ws} = this.state;
         if (!ws || ws.readyState === WebSocket.CLOSED) this.connect(); //check if websocket instance is closed, if so call `connect` function.
     };
 
@@ -156,6 +172,7 @@ class App extends Component {
         let bytes = msg.serializeBinary();
 
         this.state.ws.send(bytes);
+        this.setState({color: color})
     }
 
     onTogglePause() {
@@ -170,32 +187,37 @@ class App extends Component {
         this.state.ws.send(bytes);
     }
 
-    onPlaceRLE(name) {
-        let cmdMsg = new Messages.Command();
-        cmdMsg.setType(Messages.CommandType.PLACE_RLE);
-        cmdMsg.setText(name);
-        cmdMsg.setX(50);
-        cmdMsg.setY(50);
-        let innerBytes = cmdMsg.serializeBinary()
-        let msg = new Messages.Message();
-        msg.setType(Messages.MessageType.COMMAND);
-        msg.setContent(innerBytes);
-        let bytes = msg.serializeBinary();
-
-        this.state.ws.send(bytes);
+    onEnterRLEMode(name) {
+        if (this.state.currentRLE && this.state.currentRLE.getName() === name) {
+            this.setState({currentRLE: null})
+        } else {
+            this.state.rles.forEach((item, idx) => {
+                if (item.getName() === name) {
+                    this.setState({currentRLE: item})
+                }
+            })
+        }
     }
 
     onCanvasClick(event) {
         let x = event.nativeEvent.offsetX;
         let y = event.nativeEvent.offsetY;
-        let cellX =  Math.floor(x / ((this.state.boardWidth + CANVAS_BASE_WIDTH) / this.state.boardWidth))
-        let cellY =  Math.floor(y / ((this.state.boardHeight + CANVAS_BASE_HEIGHT) / this.state.boardHeight))
+        let cellX = Math.floor(x / ((this.state.boardWidth + CANVAS_BASE_WIDTH) / this.state.boardWidth))
+        let cellY = Math.floor(y / ((this.state.boardHeight + CANVAS_BASE_HEIGHT) / this.state.boardHeight))
         //console.log(cellX, cellY)
 
         let cmdMsg = new Messages.Command();
-        cmdMsg.setType(Messages.CommandType.MARK_CELL)
-        cmdMsg.setX(cellX)
-        cmdMsg.setY(cellY)
+
+        if (this.state.currentRLE) {
+            cmdMsg.setType(Messages.CommandType.PLACE_RLE);
+            cmdMsg.setText(this.state.currentRLE.getName());
+            cmdMsg.setX(cellX)
+            cmdMsg.setY(cellY)
+        } else {
+            cmdMsg.setType(Messages.CommandType.MARK_CELL)
+            cmdMsg.setX(cellX)
+            cmdMsg.setY(cellY)
+        }
         let innerBytes = cmdMsg.serializeBinary()
         let msg = new Messages.Message();
         msg.setType(Messages.MessageType.COMMAND);
@@ -206,93 +228,100 @@ class App extends Component {
     }
 
 
-
     render() {
-  return (
-    <div className="App">
-      <header className="App-header">
-          {
-              this.state.gameState === REGISTERED ?
-                  <div className="App-header-left">
-                      <div>Players Online: </div>
-                      {this.state.playersOnline
-                          ? <div style={{alignSelf: "center"}}>
-                              {this.state.playersOnline.map(function (item, i) {
-                                  const colorString = item.getColor().toString(16).toUpperCase().substr(0, 6);
-                                  return <div key={i} style={{display: "flex", flexDirection: "row"}}>
-                                      <div>
-                                          <div style={ {
-                                              width: '45px',
-                                              height: '45px',
-                                              borderRadius: '2px',
-                                              background: `#${colorString}`,
-                                          }} />
-                                      </div>
-                                      <div style={{paddingLeft: '10px'}}>
-                                          {item.getName()}
-                                      </div>
+        return (
+            <div className="App">
+                <header className="App-header">
+                    {
+                        this.state.gameState === REGISTERED ?
+                            <div className="App-header-left">
+                                <div>Players Online:</div>
+                                {this.state.playersOnline
+                                    ? <div style={{alignSelf: "center"}}>
+                                        {this.state.playersOnline.map(function (item, i) {
+                                            const colorString = item.getColor().toString(16).toUpperCase().substr(0, 6);
+                                            return <div key={i} style={{display: "flex", flexDirection: "row"}}>
+                                                <div>
+                                                    <div style={{
+                                                        width: '45px',
+                                                        height: '45px',
+                                                        borderRadius: '2px',
+                                                        background: `#${colorString}`,
+                                                    }}/>
+                                                </div>
+                                                <div style={{paddingLeft: '10px'}}>
+                                                    {item.getName()}
+                                                </div>
 
-                                  </div>
-                              })}
-                            </div>
-                          : <div/>}
-                  </div> : <div className="App-header-left"/>
-          }
+                                            </div>
+                                        })}
+                                    </div>
+                                    : <div/>}
+                            </div> : <div className="App-header-left"/>
+                    }
 
-          <div className="App-header-middle">
-              {/*<img src={logo} className="App-logo" alt="logo" />*/}
-              <div className="App-name">GoLife</div>
-              <div className="App-slogan">Interactive Multiplayer Cellular Automata!</div>
-              {this.state.gameState === UNCONNECTED ? <div>DISCONNECTED</div> : <div/>}
-          </div>
-          <div className="App-header-right">
-              <NameInput isDisabled={this.state.gameState === UNCONNECTED || this.state.localUsername === this.state.remoteUsername}
-                         onSubmit={this.onSubmitUsername}  onChange={this.onChangeUsername}
-              nameResponse={this.state.remoteUsername}/>
-              {this.state.rles ? <div>
-                  <div>
-                      Patterns available:
-                  </div>
-                  {this.state.rles.map((item, i) => {
-                      return <div key={i} style={{display: "flex", flexDirection: "row"}}>
-                          <div>
-                              {/*<div style={ {*/}
-                              {/*    width: '45px',*/}
-                              {/*    height: '45px',*/}
-                              {/*    borderRadius: '2px',*/}
-                              {/*    background: `#${colorString}`,*/}
-                              {/*}} />*/}
-                          </div>
-                          <button onClick={() => this.onPlaceRLE(item.getName())}>
-                              {item.getName()}
-                          </button>
-
-                      </div>
-                  })}</div>: <div/>
-              }
-          </div>
-
-      </header>
-        <div className="App-content">
-            {
-                this.state.gameState === REGISTERED || (this.state.gameState === CONNECTED && DEBUG_DONT_REGISTER_FOR_DATA)
-                    ? <div>
-                        <button onClick={() => {
-                            this.onTogglePause()
-                        }}>
-                            Toggle Pause
-                        </button>
-                        <Game boardData={this.state.boardData} tick={this.state.boardTick}
-                            width={this.state.boardWidth} height={this.state.boardHeight} onClick={this.onCanvasClick}
-                            //we do this addition to guarantee every cell has a 1 pixel border
-                            canvasWidth={CANVAS_BASE_WIDTH+this.state.boardWidth} canvasHeight={CANVAS_BASE_HEIGHT+this.state.boardHeight}
-                        paused={this.state.paused}/>
+                    <div className="App-header-middle">
+                        {/*<img src={logo} className="App-logo" alt="logo" />*/}
+                        <div className="App-name">GoLife</div>
+                        <div className="App-slogan">Interactive Multiplayer Cellular Automata!</div>
+                        {this.state.gameState === UNCONNECTED ? <div>DISCONNECTED</div> : <div/>}
                     </div>
-                    : this.state.gameState !== UNCONNECTED ? <div>Please enter a username!</div> : <div/>
-            }
-        </div>
-    </div>
-  )}
+                    <div className="App-header-right">
+                        {this.state.rles ? <div>
+                            <div>
+                                Patterns available:
+                            </div>
+                            {this.state.rles.map((item, i) => {
+                                return <div key={i} style={{display: "flex", flexDirection: "row"}}>
+                                    <div>
+                                        {/*<div style={ {*/}
+                                        {/*    width: '45px',*/}
+                                        {/*    height: '45px',*/}
+                                        {/*    borderRadius: '2px',*/}
+                                        {/*    background: `#${colorString}`,*/}
+                                        {/*}} />*/}
+                                    </div>
+                                    <button disabled={!this.state.paused}
+                                            onClick={() => this.onEnterRLEMode(item.getName())}>
+                                        {item.getName()}
+                                    </button>
+
+                                </div>
+                            })}</div> : <div/>
+                        }
+                    </div>
+
+                </header>
+                <div className="App-content">
+                    {
+                        this.state.gameState === REGISTERED || (this.state.gameState === CONNECTED && DEBUG_DONT_REGISTER_FOR_DATA)
+                            ? <div>
+                                <button onClick={() => {
+                                    this.onTogglePause()
+                                }}>
+                                    Toggle Pause
+                                </button>
+                                <Game boardData={this.state.boardData} tick={this.state.boardTick}
+                                      width={this.state.boardWidth} height={this.state.boardHeight}
+                                      onClick={this.onCanvasClick}
+                                    //we do this addition to guarantee every cell has a 1 pixel border
+                                      canvasWidth={CANVAS_BASE_WIDTH + this.state.boardWidth}
+                                      canvasHeight={CANVAS_BASE_HEIGHT + this.state.boardHeight}
+                                      paused={this.state.paused}
+                                      currentRLE={this.state.currentRLE}
+                                color={this.state.color}/>
+                            </div>
+                            : this.state.gameState !== UNCONNECTED ? <div>
+                                <NameInput
+                                    isDisabled={this.state.gameState === UNCONNECTED || this.state.localUsername === this.state.remoteUsername}
+                                    onSubmit={this.onSubmitUsername} onChange={this.onChangeUsername}
+                                />
+                            </div> : <div/>
+                    }
+                </div>
+            </div>
+        )
+    }
 }
 
 export default App;
