@@ -307,7 +307,11 @@ func (world *World) ToString() string {
 	return buf.String()
 }
 
-func (world *World) PlaceRLEAtCoords(rle RLE, y, x, color uint32) {
+func (world *World) PlaceRLEAtCoords(rle RLE, y, x, color uint32) bool {
+	if y+rle.height > world.height || x+rle.width > world.width {
+		return false
+	}
+
 	for yy := uint32(0); yy < rle.height; yy++ {
 		for xx := uint32(0); xx < rle.width; xx++ {
 			if rle.data[yy][xx] {
@@ -315,6 +319,7 @@ func (world *World) PlaceRLEAtCoords(rle RLE, y, x, color uint32) {
 			}
 		}
 	}
+	return true
 }
 
 func (world *World) MarkAlive(y, x uint32) {
