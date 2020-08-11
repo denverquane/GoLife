@@ -24,9 +24,24 @@ type Player struct {
 }
 
 var clients = make(map[*websocket.Conn]Player)
-var clientsLock = sync.RWMutex{}
+var clientsLock = sync.Mutex{}
+
+type BroadcastType int
+
+type BroadcastMsg struct {
+	Btype  BroadcastType
+	Paused bool
+	Client *websocket.Conn
+}
+
+const (
+	PLAYERS    BroadcastType = 0
+	WORLD      BroadcastType = 1
+	FIRST_DATA BroadcastType = 3
+)
 
 var SimulationChannel = make(chan simulation.SimulatorMessage)
+var BroadcastChannel = make(chan BroadcastMsg)
 
 var addr = flag.String("addr", ":5000", "http service address")
 var RleMap = make(map[string]simulation.RLE)
@@ -53,18 +68,19 @@ func main() {
 }
 
 func Run(addr *string) {
-	go simulationWorker(30, SimulationChannel)
+	var GlobalWorld simulation.World
+	GlobalWorld = simulation.NewConwayWorld(200, 200)
+	go simulationWorker(&GlobalWorld, 30, SimulationChannel)
+	go broadcastWorker(&GlobalWorld, BroadcastChannel)
 
 	http.HandleFunc("/ws", wsHandler)
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
 
-var GlobalWorld simulation.World
-
-func simulationWorker(targetFps int64, msgChan <-chan simulation.SimulatorMessage) {
+func simulationWorker(world *simulation.World, targetFps int64, msgChan <-chan simulation.SimulatorMessage) {
 	msPerFrame := (1.0 / float64(targetFps)) * 1000.0
-	GlobalWorld = simulation.NewConwayWorld(200, 200)
-	GlobalWorld.PlaceRLEAtCoords(RleMap["glider"], 0, 0, simulation.ALIVE_FULL)
+
+	world.PlaceRLEAtCoords(RleMap["glider"], 0, 0, simulation.ALIVE_FULL)
 
 	//GlobalWorld.PlaceRLEAtCoords(RleMap["pufferfish"], 100, 150, simulation.ALIVE_FULL)
 	paused := false
@@ -76,33 +92,59 @@ func simulationWorker(targetFps int64, msgChan <-chan simulation.SimulatorMessag
 				paused = !paused
 			case simulation.MARK_CELL:
 				if paused {
-					GlobalWorld.MarkAliveColor(msg.Y, msg.X, msg.Color)
+					world.MarkAliveColor(msg.Y, msg.X, msg.Color)
 				}
 			case simulation.PLACE_RLE:
 				if paused {
 					for name, rle := range RleMap {
 						if name == msg.Info {
-							GlobalWorld.PlaceRLEAtCoords(rle, msg.Y, msg.X, msg.Color)
+							world.PlaceRLEAtCoords(rle, msg.Y, msg.X, msg.Color)
 						}
 					}
 				}
 			}
 		default:
-			if !paused && len(clients) > 0 {
+			clientsLock.Lock()
+			numClients := len(clients)
+			clientsLock.Unlock()
+			if !paused && numClients > 0 {
 				oldT := time.Now().UnixNano()
-				GlobalWorld.Tick()
-				//TODO send message to dedicated worker to send the status probably?
+				world.Tick()
+
 				//Consider race condition of message being received AFTER another tick...
-				broadcastWorld(&GlobalWorld, false)
+				BroadcastChannel <- BroadcastMsg{
+					Btype:  WORLD,
+					Paused: false,
+				}
 				//log.Print(GlobalWorld.ToString())
 				tickMs := float64(time.Now().UnixNano()-oldT) / NS_PER_MS
 				//log.Printf("%fms to tick; sleeping %fms\n", tickMs, msPerFrame - tickMs)
 				//time.Sleep(time.Millisecond * 500)
 				time.Sleep(time.Duration(NS_PER_MS * (msPerFrame - tickMs)))
 			} else {
-				broadcastWorld(&GlobalWorld, true)
+				BroadcastChannel <- BroadcastMsg{
+					Btype:  WORLD,
+					Paused: true,
+				}
 				//log.Println("Simulation is paused; sleeping for 1000ms")
 				time.Sleep(time.Millisecond * 50)
+			}
+		}
+	}
+}
+
+func broadcastWorker(world *simulation.World, broadcasts <-chan BroadcastMsg) {
+	for {
+		select {
+		case msg := <-broadcasts:
+			switch msg.Btype {
+			case PLAYERS:
+				broadcastPlayers()
+			case WORLD:
+				broadcastWorld(world, msg.Paused)
+			case FIRST_DATA:
+				sendFirstWorldMessage(msg.Client, world)
+				sendRLEs(msg.Client)
 			}
 		}
 	}
@@ -117,12 +159,13 @@ func sendFirstWorldMessage(client *websocket.Conn, world *simulation.World) {
 		err := client.WriteMessage(websocket.BinaryMessage, marshalled)
 		if err != nil {
 			log.Println(err)
+
 		}
 	}
 }
 
-func sendRLEs(client *websocket.Conn, rles map[string]simulation.RLE) {
-	rlesBytes := simulation.ToRleBytes(rles)
+func sendRLEs(client *websocket.Conn) {
+	rlesBytes := simulation.ToRleBytes(RleMap)
 	msg := message.Message{
 		Type:    message.MessageType_RLE_OPTIONS,
 		Content: rlesBytes,
@@ -136,6 +179,7 @@ func sendRLEs(client *websocket.Conn, rles map[string]simulation.RLE) {
 	err = client.WriteMessage(websocket.BinaryMessage, msgBytes)
 	if err != nil {
 		log.Println(err)
+		delete(clients, client)
 	}
 }
 
@@ -144,29 +188,30 @@ func broadcastWorld(world *simulation.World, paused bool) {
 	if err != nil {
 		log.Printf("Error in marshalling world: %s\n", err)
 	} else {
-		clientsLock.RLock()
+		clientsLock.Lock()
 		for client, player := range clients {
 			if player.name != "" || DEBUG_BROADCAST_NON_REGISTERED {
 				err := client.WriteMessage(websocket.BinaryMessage, marshalled)
 				if err != nil {
 					log.Println(err)
+					delete(clients, client)
 				}
 			}
 		}
-		clientsLock.RUnlock()
+		clientsLock.Unlock()
 	}
 }
 
 func broadcastPlayers() {
 	players := message.Players{}
-	clientsLock.RLock()
+	clientsLock.Lock()
 	for _, v := range clients {
 		players.Players = append(players.Players, &message.Player{
 			Name:  v.name,
 			Color: v.color,
 		})
 	}
-	clientsLock.RUnlock()
+	clientsLock.Unlock()
 	playersMarshalled, err := proto.Marshal(&players)
 	if err != nil {
 		log.Println(err)
@@ -181,14 +226,15 @@ func broadcastPlayers() {
 		log.Println(err)
 		return
 	}
-	clientsLock.RLock()
+	clientsLock.Lock()
 	for client := range clients {
 		err := client.WriteMessage(websocket.BinaryMessage, marshalled)
 		if err != nil {
 			log.Println(err)
+			delete(clients, client)
 		}
 	}
-	clientsLock.RUnlock()
+	clientsLock.Unlock()
 }
 
 func wsHandler(w http.ResponseWriter, r *http.Request) {
@@ -213,7 +259,9 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 		clientsLock.Lock()
 		delete(clients, c)
 		clientsLock.Unlock()
-		broadcastPlayers()
+		BroadcastChannel <- BroadcastMsg{
+			Btype: PLAYERS,
+		}
 		return nil
 	})
 
@@ -242,14 +290,22 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 				} else {
 					//TODO verify name/color aren't taken
 					log.Printf("Registering %s\n", regMsg.Name)
+					clientsLock.Lock()
 					clients[c] = Player{name: regMsg.Name, color: regMsg.Color}
 					err := c.WriteMessage(websocket.BinaryMessage, data)
+					clientsLock.Unlock()
 					if err != nil {
 						log.Printf("Error echoing registration message to %s: %s\n", regMsg.Name, err)
+						return
 					}
-					broadcastPlayers()
-					sendFirstWorldMessage(c, &GlobalWorld)
-					sendRLEs(c, RleMap)
+
+					BroadcastChannel <- BroadcastMsg{
+						Btype: PLAYERS,
+					}
+					BroadcastChannel <- BroadcastMsg{
+						Btype:  FIRST_DATA,
+						Client: c,
+					}
 				}
 			case message.MessageType_COMMAND:
 				cmdMsg := message.Command{}
