@@ -115,7 +115,7 @@ func Decay(cell uint32) uint32 {
 	}
 }
 
-func (world *World) Tick() {
+func (world *World) Tick(blendColors bool) {
 	//only span the inner areas, don't do the perimeter yet
 	for y := uint32(1); y < world.height-1; y++ {
 		for x := uint32(1); x < world.width-1; x++ {
@@ -124,13 +124,21 @@ func (world *World) Tick() {
 
 			if alive {
 				if world.aliveRulesMapping[neighborhood] {
-					(*world.dataBuffer)[y][x] = Decay((*world.data)[y][x])
+					if blendColors {
+						(*world.dataBuffer)[y][x] = (*world.data).ExistingCellNeighborsColorBlend((*world.data)[y][x], y, x, neighborhood)
+					} else {
+						(*world.dataBuffer)[y][x] = Decay((*world.data)[y][x])
+					}
 				} else {
-					(*world.dataBuffer)[y][x] = 0
+					(*world.dataBuffer)[y][x] = DEAD
 				}
 			} else {
 				if world.deadRulesMapping[neighborhood] {
-					(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+					if blendColors {
+						(*world.dataBuffer)[y][x] = (*world.data).NewCellNeighborsColorBlend(y, x, neighborhood)
+					} else {
+						(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+					}
 				} else {
 					(*world.dataBuffer)[y][x] = DEAD
 				}
@@ -144,13 +152,21 @@ func (world *World) Tick() {
 		neighborhood := world.data.PerimeterNeighborsValue(N, y, x)
 		if alive {
 			if world.aliveRulesMapping[neighborhood] {
-				(*world.dataBuffer)[y][x] = Decay((*world.data)[y][x])
+				if blendColors {
+					(*world.dataBuffer)[y][x] = (*world.data).ExistingCellNeighborsColorBlend((*world.data)[y][x], y, x, neighborhood)
+				} else {
+					(*world.dataBuffer)[y][x] = Decay((*world.data)[y][x])
+				}
 			} else {
 				(*world.dataBuffer)[y][x] = 0
 			}
 		} else {
 			if world.deadRulesMapping[neighborhood] {
-				(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+				if blendColors {
+					(*world.dataBuffer)[y][x] = (*world.data).NewCellNeighborsColorBlend(y, x, neighborhood)
+				} else {
+					(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+				}
 			} else {
 				(*world.dataBuffer)[y][x] = DEAD
 			}
@@ -163,13 +179,21 @@ func (world *World) Tick() {
 		neighborhood := world.data.PerimeterNeighborsValue(S, y, x)
 		if alive {
 			if world.aliveRulesMapping[neighborhood] {
-				(*world.dataBuffer)[y][x] = Decay((*world.data)[y][x])
+				if blendColors {
+					(*world.dataBuffer)[y][x] = (*world.data).ExistingCellNeighborsColorBlend((*world.data)[y][x], y, x, neighborhood)
+				} else {
+					(*world.dataBuffer)[y][x] = Decay((*world.data)[y][x])
+				}
 			} else {
 				(*world.dataBuffer)[y][x] = 0
 			}
 		} else {
 			if world.deadRulesMapping[neighborhood] {
-				(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+				if blendColors {
+					(*world.dataBuffer)[y][x] = (*world.data).NewCellNeighborsColorBlend(y, x, neighborhood)
+				} else {
+					(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+				}
 			} else {
 				(*world.dataBuffer)[y][x] = DEAD
 			}
@@ -182,13 +206,21 @@ func (world *World) Tick() {
 		neighborhood := world.data.PerimeterNeighborsValue(E, y, x)
 		if alive {
 			if world.aliveRulesMapping[neighborhood] {
-				(*world.dataBuffer)[y][x] = Decay((*world.data)[y][x])
+				if blendColors {
+					(*world.dataBuffer)[y][x] = (*world.data).ExistingCellNeighborsColorBlend((*world.dataBuffer)[y][x], y, x, neighborhood)
+				} else {
+					(*world.dataBuffer)[y][x] = Decay((*world.dataBuffer)[y][x])
+				}
 			} else {
 				(*world.dataBuffer)[y][x] = 0
 			}
 		} else {
 			if world.deadRulesMapping[neighborhood] {
-				(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+				if blendColors {
+					(*world.dataBuffer)[y][x] = (*world.data).NewCellNeighborsColorBlend(y, x, neighborhood)
+				} else {
+					(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+				}
 			} else {
 				(*world.dataBuffer)[y][x] = DEAD
 			}
@@ -201,13 +233,21 @@ func (world *World) Tick() {
 		neighborhood := world.data.PerimeterNeighborsValue(W, y, x)
 		if alive {
 			if world.aliveRulesMapping[neighborhood] {
-				(*world.dataBuffer)[y][x] = Decay((*world.data)[y][x])
+				if blendColors {
+					(*world.dataBuffer)[y][x] = (*world.data).ExistingCellNeighborsColorBlend((*world.data)[y][x], y, x, neighborhood)
+				} else {
+					(*world.dataBuffer)[y][x] = Decay((*world.data)[y][x])
+				}
 			} else {
 				(*world.dataBuffer)[y][x] = 0
 			}
 		} else {
 			if world.deadRulesMapping[neighborhood] {
-				(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+				if blendColors {
+					(*world.dataBuffer)[y][x] = (*world.data).NewCellNeighborsColorBlend(y, x, neighborhood)
+				} else {
+					(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+				}
 			} else {
 				(*world.dataBuffer)[y][x] = DEAD
 			}
@@ -220,13 +260,21 @@ func (world *World) Tick() {
 	neighborhood := world.data.PerimeterNeighborsValue(NW, y, x)
 	if alive {
 		if world.aliveRulesMapping[neighborhood] {
-			(*world.dataBuffer)[y][x] = Decay((*world.data)[y][x])
+			if blendColors {
+				(*world.dataBuffer)[y][x] = (*world.data).ExistingCellNeighborsColorBlend((*world.data)[y][x], y, x, neighborhood)
+			} else {
+				(*world.dataBuffer)[y][x] = Decay((*world.data)[y][x])
+			}
 		} else {
 			(*world.dataBuffer)[y][x] = 0
 		}
 	} else {
 		if world.deadRulesMapping[neighborhood] {
-			(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+			if blendColors {
+				(*world.dataBuffer)[y][x] = (*world.data).NewCellNeighborsColorBlend(y, x, neighborhood)
+			} else {
+				(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+			}
 		} else {
 			(*world.dataBuffer)[y][x] = DEAD
 		}
@@ -237,13 +285,21 @@ func (world *World) Tick() {
 	neighborhood = world.data.PerimeterNeighborsValue(NE, y, x)
 	if alive {
 		if world.aliveRulesMapping[neighborhood] {
-			(*world.dataBuffer)[y][x] = Decay((*world.data)[y][x])
+			if blendColors {
+				(*world.dataBuffer)[y][x] = (*world.data).ExistingCellNeighborsColorBlend((*world.data)[y][x], y, x, neighborhood)
+			} else {
+				(*world.dataBuffer)[y][x] = Decay((*world.data)[y][x])
+			}
 		} else {
 			(*world.dataBuffer)[y][x] = 0
 		}
 	} else {
 		if world.deadRulesMapping[neighborhood] {
-			(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+			if blendColors {
+				(*world.dataBuffer)[y][x] = (*world.data).NewCellNeighborsColorBlend(y, x, neighborhood)
+			} else {
+				(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+			}
 		} else {
 			(*world.dataBuffer)[y][x] = DEAD
 		}
@@ -254,13 +310,21 @@ func (world *World) Tick() {
 	neighborhood = world.data.PerimeterNeighborsValue(SE, y, x)
 	if alive {
 		if world.aliveRulesMapping[neighborhood] {
-			(*world.dataBuffer)[y][x] = Decay((*world.data)[y][x])
+			if blendColors {
+				(*world.dataBuffer)[y][x] = (*world.data).ExistingCellNeighborsColorBlend((*world.data)[y][x], y, x, neighborhood)
+			} else {
+				(*world.dataBuffer)[y][x] = Decay((*world.data)[y][x])
+			}
 		} else {
 			(*world.dataBuffer)[y][x] = 0
 		}
 	} else {
 		if world.deadRulesMapping[neighborhood] {
-			(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+			if blendColors {
+				(*world.dataBuffer)[y][x] = (*world.data).NewCellNeighborsColorBlend(y, x, neighborhood)
+			} else {
+				(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+			}
 		} else {
 			(*world.dataBuffer)[y][x] = DEAD
 		}
@@ -271,13 +335,21 @@ func (world *World) Tick() {
 	neighborhood = world.data.PerimeterNeighborsValue(SW, y, x)
 	if alive {
 		if world.aliveRulesMapping[neighborhood] {
-			(*world.dataBuffer)[y][x] = Decay((*world.data)[y][x])
+			if blendColors {
+				(*world.dataBuffer)[y][x] = (*world.data).ExistingCellNeighborsColorBlend((*world.data)[y][x], y, x, neighborhood)
+			} else {
+				(*world.dataBuffer)[y][x] = Decay((*world.data)[y][x])
+			}
 		} else {
 			(*world.dataBuffer)[y][x] = 0
 		}
 	} else {
 		if world.deadRulesMapping[neighborhood] {
-			(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+			if blendColors {
+				(*world.dataBuffer)[y][x] = (*world.data).NewCellNeighborsColorBlend(y, x, neighborhood)
+			} else {
+				(*world.dataBuffer)[y][x] = (*world.data).NeighborsColorMajority(y, x, neighborhood)
+			}
 		} else {
 			(*world.dataBuffer)[y][x] = DEAD
 		}

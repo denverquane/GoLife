@@ -21,6 +21,58 @@ func (dg DataGrid) InnerNeighborsValue(y, x uint32) byte {
 	return neighborState
 }
 
+//only gets called with 3 neighbors
+func (dg *DataGrid) NewCellNeighborsColorBlend(y, x uint32, neighbors byte) uint32 {
+	retColor := colorful.Color{}
+	colorsBlended := 0
+	for i := N; i < 9; i++ {
+		if neighbors&DirectionMasks[i] > 0 {
+			xOff := XOffsets[i]
+			yOff := YOffsets[i]
+			cell := (*dg)[int(y)+yOff][int(x)+xOff]
+			col := colorOfCell(cell)
+			if colorsBlended == 0 {
+				retColor = col
+			} else if colorsBlended == 1 {
+				retColor = retColor.BlendRgb(col, 0.5)
+			} else if colorsBlended == 2 {
+				retColor = retColor.BlendRgb(col, 0.333)
+			}
+			colorsBlended++
+		}
+	}
+	newRed := retColor.R * 255.0
+	newGreen := retColor.G * 255.0
+	newBlue := retColor.B * 255.0
+	return uint32(newRed)<<24 + uint32(newGreen)<<16 + uint32(newBlue)<<8 + ALIVE
+}
+
+func (dg *DataGrid) ExistingCellNeighborsColorBlend(oldCell uint32, y, x uint32, neighbors byte) uint32 {
+	retColor := colorOfCell(oldCell)
+	colorsBlended := 0
+	for i := N; i < 9; i++ {
+		if neighbors&DirectionMasks[i] > 0 {
+			xOff := XOffsets[i]
+			yOff := YOffsets[i]
+			cell := (*dg)[int(y)+yOff][int(x)+xOff]
+			col := colorOfCell(cell)
+			if colorsBlended == 0 {
+				retColor = retColor.BlendRgb(col, 0.5)
+			} else if colorsBlended == 1 {
+				retColor = retColor.BlendRgb(col, 0.333)
+			} else if colorsBlended == 2 {
+				retColor = retColor.BlendRgb(col, 0.25)
+			}
+			colorsBlended++
+		}
+	}
+	newRed := retColor.R * 255.0
+	newGreen := retColor.G * 255.0
+	newBlue := retColor.B * 255.0
+	cell := uint32(newRed)<<24 + uint32(newGreen)<<16 + uint32(newBlue)<<8 + (oldCell & ALIVE)
+	return Decay(cell)
+}
+
 func (dg DataGrid) NeighborsColorMajority(y, x uint32, neighbors byte) uint32 {
 	colorCount := make(map[colorful.Color]int)
 	for i := N; i < 9; i++ {

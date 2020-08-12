@@ -6,8 +6,10 @@ import (
 	"github.com/denverquane/golife/simulation"
 	"github.com/gorilla/websocket"
 	"google.golang.org/protobuf/proto"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -47,18 +49,21 @@ var addr = flag.String("addr", ":5000", "http service address")
 var RleMap = make(map[string]simulation.RLE)
 
 func main() {
-	rle, err := simulation.LoadRLE("./data/glider.rle")
+	files, err := ioutil.ReadDir("./data")
 	if err != nil {
 		log.Fatal(err)
-	} else {
-		RleMap["glider"] = rle
 	}
+	for _, v := range files {
+		if strings.HasSuffix(v.Name(), ".rle") {
+			rle, err := simulation.LoadRLE("./data/" + v.Name())
+			if err != nil {
+				log.Println(err)
+			} else {
+				split := strings.Split(v.Name(), ".")
+				RleMap[split[0]] = rle
+			}
+		}
 
-	rle, err = simulation.LoadRLE("./data/pufferfish.rle")
-	if err != nil {
-		log.Fatal(err)
-	} else {
-		RleMap["pufferfish"] = rle
 	}
 
 	flag.Parse()
@@ -109,7 +114,7 @@ func simulationWorker(world *simulation.World, targetFps int64, msgChan <-chan s
 			clientsLock.Unlock()
 			if !paused && numClients > 0 {
 				oldT := time.Now().UnixNano()
-				world.Tick()
+				world.Tick(true)
 
 				//Consider race condition of message being received AFTER another tick...
 				BroadcastChannel <- BroadcastMsg{
@@ -203,22 +208,22 @@ func broadcastWorld(world *simulation.World, paused bool) {
 }
 
 func broadcastPlayers() {
-	players := message.Players{}
+	serverData := message.ServerData{}
 	clientsLock.Lock()
 	for _, v := range clients {
-		players.Players = append(players.Players, &message.Player{
+		serverData.Players = append(serverData.Players, &message.Player{
 			Name:  v.name,
 			Color: v.color,
 		})
 	}
 	clientsLock.Unlock()
-	playersMarshalled, err := proto.Marshal(&players)
+	playersMarshalled, err := proto.Marshal(&serverData)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	msg := message.Message{
-		Type:    message.MessageType_PLAYERS,
+		Type:    message.MessageType_SERVER_DATA,
 		Content: playersMarshalled,
 	}
 	marshalled, err := proto.Marshal(&msg)

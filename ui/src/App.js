@@ -101,9 +101,9 @@ class App extends Component {
                         let RegisterMessage = Messages.Player.deserializeBinary(message.getContent())
                         this.setState({gameState: REGISTERED, remoteUsername: RegisterMessage.getName()})
                         break;
-                    case Messages.MessageType.PLAYERS:
-                        let PlayersMessage = Messages.Players.deserializeBinary(message.getContent())
-                        this.setState({playersOnline: PlayersMessage.getPlayersList()})
+                    case Messages.MessageType.SERVER_DATA:
+                        let ServerDataMessage = Messages.ServerData.deserializeBinary(message.getContent())
+                        this.setState({playersOnline: ServerDataMessage.getPlayersList()})
                         break;
                     case Messages.MessageType.RLE_OPTIONS:
                         let RlesMessage = Messages.RLEs.deserializeBinary(message.getContent())

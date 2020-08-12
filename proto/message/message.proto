@@ -5,8 +5,8 @@ enum MessageType {
   //sent by the client when they want to register, and echoed back by the server on a successful register
   REGISTER = 0;
 
-  //repeated player data
-  PLAYERS = 1;
+  //data about the server
+  SERVER_DATA = 1;
 
   //raw world data, alongside any additional information about the world (dimensions, tick, etc)
   WORLD_DATA = 2;
@@ -36,10 +36,6 @@ message Player {
   fixed32 color = 2;
 }
 
-message Players {
-  repeated Player players = 1;
-}
-
 message WorldData {
   repeated fixed32 data = 1;
   uint64 tick = 2;
@@ -47,6 +43,11 @@ message WorldData {
   uint32 width = 3;
   uint32 height = 4;
   bool paused = 5;
+}
+
+message ServerData {
+  repeated Player players = 1;
+
 }
 
 enum CommandType {
