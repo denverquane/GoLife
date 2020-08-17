@@ -3,9 +3,10 @@ import './Game.css';
 
 import {CANVAS_BASE_HEIGHT, CANVAS_BASE_WIDTH} from './App';
 
-const ALIVE = 0x000000FF;
+const ALIVE = 0x00000001;
 
 export default class Game extends Component {
+    lastTime;
 
     constructor(props) {
         super(props);
@@ -79,7 +80,9 @@ export default class Game extends Component {
             || ((this.state.mouseCellX !== prevState.mouseCellX
                 || this.state.mouseCellY !== prevState.mouseCellY
                 || this.state.mouseInCanvas !== prevState.mouseInCanvas) && this.state.currentRLE && this.props.paused)) {
+            //console.log("Time since last data: " + (Date.now()-this.lastTime))
             console.log("Updating canvas")
+            this.lastTime = Date.now();
             const canvas = this.canvasRef.current;
             if (this.props.paused !== prevProps.paused) {
                 if (!this.props.paused) {
@@ -92,21 +95,40 @@ export default class Game extends Component {
             context.fillRect(0, 0, canvas.width, canvas.height);
             let cWidth = canvas.width / this.props.width;
             let cHeight = canvas.height / this.props.height;
-            for (let y = 0; y < this.props.height; y++) {
-                for (let x = 0; x < this.props.width; x++) {
-                    let elemIndex = y * (this.props.width) + x;
-                    let cell = this.props.boardData[elemIndex];
-                    let aliveness = cell & ALIVE
-                    if (aliveness > 0) {
-                        //this is so dumb; fighting JS' unsigned integer stupidity
-                        let r = ((cell >> 8) & (ALIVE << 16)) >> 16;
-                        let g = ((cell >> 8) & (ALIVE << 8)) >> 8;
-                        let b = (cell >> 8) & ALIVE;
-                        context.fillStyle = 'rgba(' + r + ', ' + g + ',' + b + ',' + (aliveness + 64) / 255.0 + ')';
-                        context.fillRect(x * cWidth, y * cHeight, cWidth - 1, cHeight - 1);
+            let y = 0;
+            let x = 0;
+            for (let i = 0; i < this.props.boardData.length; i++) {
+                let cell = this.props.boardData[i];
+                if ((cell & ALIVE) === 1) {
+                    //this is so dumb; fighting JS' unsigned integer stupidity
+                    console.log("Alive at " + y + "," + x)
+                    let r = ((cell >> 8) & (0x000000FF << 16)) >> 16;
+                    let g = ((cell >> 8) & (0x000000FF << 8)) >> 8;
+                    let b = (cell >> 8) & 0x000000FF;
+                    context.fillStyle = 'rgb(' + r + ', ' + g + ',' + b + ',1.0)';
+                    context.fillRect(x * cWidth, y * cHeight, cWidth - 1, cHeight - 1);
+                } else {
+                    //get the lowest 7 bits that aren't the bits for aliveness
+                    let rleDeadCells = (cell & 0x000000FE) >> 1
+                    //console.log(rleDeadCells)
+                    if (rleDeadCells > 1) {
+                        x += rleDeadCells;
                     }
+
+                }
+                x++;
+                if (x >= this.props.width) {
+                    y++;
+                    x = 0;
                 }
             }
+            // for (let y = 0; y < this.props.height; y++) {
+            //     for (let x = 0; x < this.props.width; x++) {
+            //
+            //         elemIndex++;
+            //
+            //     }
+            // }
             context.fillStyle = "#000000";
             if (this.state.mouseInCanvas && this.state.currentRLE && this.props.paused) {
                 let r = (this.props.color >> 24) & 0xFF;
@@ -125,6 +147,8 @@ export default class Game extends Component {
                 }
             }
             context.fillStyle = "#000000";
+            let timeToDraw = Date.now() - this.lastTime;
+            console.log(timeToDraw)
         }
     }
 

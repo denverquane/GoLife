@@ -70,7 +70,7 @@ func (dg *DataGrid) ExistingCellNeighborsColorBlend(oldCell uint32, y, x uint32,
 	newGreen := retColor.G * 255.0
 	newBlue := retColor.B * 255.0
 	cell := uint32(newRed)<<24 + uint32(newGreen)<<16 + uint32(newBlue)<<8 + (oldCell & ALIVE)
-	return Decay(cell)
+	return cell
 }
 
 func (dg DataGrid) NeighborsColorMajority(y, x uint32, neighbors byte) uint32 {

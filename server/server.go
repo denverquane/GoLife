@@ -74,8 +74,8 @@ func main() {
 
 func Run(addr *string) {
 	var GlobalWorld simulation.World
-	GlobalWorld = simulation.NewConwayWorld(200, 200)
-	go simulationWorker(&GlobalWorld, 30, SimulationChannel)
+	GlobalWorld = simulation.NewConwayWorld(50, 50)
+	go simulationWorker(&GlobalWorld, 5, SimulationChannel)
 	go broadcastWorker(&GlobalWorld, BroadcastChannel)
 
 	http.HandleFunc("/ws", wsHandler)
@@ -85,7 +85,7 @@ func Run(addr *string) {
 func simulationWorker(world *simulation.World, targetFps int64, msgChan <-chan simulation.SimulatorMessage) {
 	msPerFrame := (1.0 / float64(targetFps)) * 1000.0
 
-	world.PlaceRLEAtCoords(RleMap["glider"], 0, 0, simulation.ALIVE_FULL)
+	//world.PlaceRLEAtCoords(RleMap["glider"], 0, 0, simulation.ALIVE_FULL)
 
 	//GlobalWorld.PlaceRLEAtCoords(RleMap["pufferfish"], 100, 150, simulation.ALIVE_FULL)
 	paused := false
