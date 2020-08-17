@@ -402,10 +402,19 @@ func (world *World) MarkAliveColor(y, x uint32, color uint32) {
 	(*world.data)[y][x] = ALIVE | (color & ALIVE_MASK)
 }
 
+func (world *World) Clear() {
+	for y := uint32(0); y < world.height; y++ {
+		for x := uint32(0); x < world.width; x++ {
+			(*world.data)[y][x] = DEAD
+		}
+	}
+}
+
 const (
 	TOGGLE_PAUSE int = 1
 	MARK_CELL    int = 2
 	PLACE_RLE    int = 3
+	CLEAR_BOARD  int = 4
 )
 
 type SimulatorMessage struct {

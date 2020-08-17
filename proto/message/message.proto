@@ -55,6 +55,7 @@ enum CommandType {
   PLACE_RLE = 1;
   TOGGLE_PAUSE = 2;
   POST_CHAT = 3;
+  CLEAR_BOARD = 4;
 }
 
 message Command {

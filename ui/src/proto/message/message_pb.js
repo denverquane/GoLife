@@ -1979,7 +1979,8 @@ proto.message.CommandType = {
   MARK_CELL: 0,
   PLACE_RLE: 1,
   TOGGLE_PAUSE: 2,
-  POST_CHAT: 3
+  POST_CHAT: 3,
+  CLEAR_BOARD: 4
 };
 
 /**

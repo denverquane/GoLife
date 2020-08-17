@@ -107,6 +107,8 @@ func simulationWorker(world *simulation.World, targetFps int64, msgChan <-chan s
 						}
 					}
 				}
+			case simulation.CLEAR_BOARD:
+				world.Clear()
 			}
 		default:
 			clientsLock.Lock()
@@ -344,6 +346,10 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 							Y:     cmdMsg.Y,
 							Color: player.color,
 							Info:  cmdMsg.Text,
+						}
+					case message.CommandType_CLEAR_BOARD:
+						SimulationChannel <- simulation.SimulatorMessage{
+							Type: simulation.CLEAR_BOARD,
 						}
 					}
 				}

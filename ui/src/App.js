@@ -187,6 +187,18 @@ class App extends Component {
         this.state.ws.send(bytes);
     }
 
+    onClearBoard() {
+        let cmdMsg = new Messages.Command();
+        cmdMsg.setType(Messages.CommandType.CLEAR_BOARD)
+        let innerBytes = cmdMsg.serializeBinary()
+        let msg = new Messages.Message();
+        msg.setType(Messages.MessageType.COMMAND);
+        msg.setContent(innerBytes);
+        let bytes = msg.serializeBinary();
+
+        this.state.ws.send(bytes);
+    }
+
     onEnterRLEMode(name) {
         if (this.state.currentRLE && this.state.currentRLE.getName() === name) {
             this.setState({currentRLE: null})
@@ -295,12 +307,19 @@ class App extends Component {
                 <div className="App-content">
                     {
                         this.state.gameState === REGISTERED || (this.state.gameState === CONNECTED && DEBUG_DONT_REGISTER_FOR_DATA)
-                            ? <div>
-                                <button onClick={() => {
-                                    this.onTogglePause()
-                                }}>
-                                    Toggle Pause
-                                </button>
+                            ? <div style={{alignSelf: "center"}}>
+                                <div style={{display: "flex", flexDirection: "row"}}>
+                                    <button onClick={() => {
+                                        this.onTogglePause()
+                                    }}>
+                                        {this.state.playersOnline && this.state.playersOnline.length > 1 ? "Vote Pause" : "Toggle Pause"}
+                                    </button>
+                                    <button onClick={() => {
+                                        this.onClearBoard()
+                                    }}>
+                                        {this.state.playersOnline && this.state.playersOnline.length > 1 ? "Vote Clear Board" : "Clear Board"}
+                                    </button>
+                                </div>
                                 <Game boardData={this.state.boardData} tick={this.state.boardTick}
                                       width={this.state.boardWidth} height={this.state.boardHeight}
                                       onClick={this.onCanvasClick}
@@ -309,7 +328,7 @@ class App extends Component {
                                       canvasHeight={CANVAS_BASE_HEIGHT + this.state.boardHeight}
                                       paused={this.state.paused}
                                       currentRLE={this.state.currentRLE}
-                                color={this.state.color}/>
+                                      color={this.state.color}/>
                             </div>
                             : this.state.gameState !== UNCONNECTED ? <div>
                                 <NameInput
