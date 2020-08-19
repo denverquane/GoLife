@@ -9,8 +9,8 @@ const UNCONNECTED = 0;
 const CONNECTED = 1;
 const REGISTERED = 2;
 
-export const CANVAS_BASE_WIDTH = 800;
-export const CANVAS_BASE_HEIGHT = 800;
+export const CANVAS_BASE_WIDTH = 1000;
+export const CANVAS_BASE_HEIGHT = 1000;
 
 const DEBUG_DONT_REGISTER_FOR_DATA = false;
 

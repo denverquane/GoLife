@@ -81,7 +81,7 @@ export default class Game extends Component {
                 || this.state.mouseCellY !== prevState.mouseCellY
                 || this.state.mouseInCanvas !== prevState.mouseInCanvas) && this.state.currentRLE && this.props.paused)) {
             //console.log("Time since last data: " + (Date.now()-this.lastTime))
-            console.log("Updating canvas")
+            console.log("Updating canvas, total data array size received: " + this.props.boardData.length * 4 + " bytes")
             this.lastTime = Date.now();
             const canvas = this.canvasRef.current;
             if (this.props.paused !== prevProps.paused) {
@@ -109,13 +109,12 @@ export default class Game extends Component {
                     x++;
                 } else {
                     //get all the bits not associated with aliveness (dead cells don't need colors)
-                    let rleDeadCells = (cell & 0xFFFFFFFE) >> 1
+                    let rleDeadCells = cell >> 1
                     if (rleDeadCells > 0) {
                         x += rleDeadCells;
-                    } else {
-                        x++;
                     }
                 }
+                //TODO still having some wrapping around to the beginning I think... investigate
                 if (x > this.props.width-2) {
                     y++;
                     x = 0;
@@ -140,7 +139,7 @@ export default class Game extends Component {
             }
             context.fillStyle = "#000000";
             let timeToDraw = Date.now() - this.lastTime;
-            console.log(timeToDraw)
+            console.log("Took " + timeToDraw + "ms to redraw the canvas")
         }
     }
 

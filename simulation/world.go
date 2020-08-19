@@ -36,7 +36,7 @@ func (world *World) GetFlattenedData() []uint32 {
 		for x := uint32(0); x < world.width; x++ {
 			//if the cell is dead, we can use all the color bits for RLE encoding of sequential dead cells
 			if deadCount == world.width-1 || x == world.width-1 {
-				shifted := (deadCount << 1) & 0xFFFFFF_FE
+				shifted := deadCount << 1
 
 				data = append(data, shifted)
 				deadCount = 0
@@ -48,7 +48,7 @@ func (world *World) GetFlattenedData() []uint32 {
 			} else {
 				if deadCount > 0 {
 					//if we reach an alive cell, add a RLE-encoded length of dead cells
-					shifted := DEAD | ((deadCount & 0x000000FF) << 1)
+					shifted := deadCount << 1
 					data = append(data, shifted)
 
 					//append this current alive cell
