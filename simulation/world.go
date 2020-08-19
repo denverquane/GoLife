@@ -30,16 +30,14 @@ func (world *World) GetDims() (height uint32, width uint32) {
 }
 
 func (world *World) GetFlattenedData() []uint32 {
-	debugString := bytes.Buffer{}
 	data := make([]uint32, 0)
 	for y := uint32(0); y < world.height; y++ {
 		deadCount := uint32(0)
 		for x := uint32(0); x < world.width; x++ {
-			//using 7 bits for RLE encoding of sequential dead cells and 1 bit for alive; max for RLE is 2^7-1=127
-			if deadCount == 127 || x == world.width-1 {
-				shifted := DEAD | ((deadCount & 0x000000FF) << 1)
+			//if the cell is dead, we can use all the color bits for RLE encoding of sequential dead cells
+			if deadCount == world.width-1 || x == world.width-1 {
+				shifted := (deadCount << 1) & 0xFFFFFF_FE
 
-				debugString.WriteString(fmt.Sprintf("%dD", deadCount))
 				data = append(data, shifted)
 				deadCount = 0
 			}
@@ -51,25 +49,18 @@ func (world *World) GetFlattenedData() []uint32 {
 				if deadCount > 0 {
 					//if we reach an alive cell, add a RLE-encoded length of dead cells
 					shifted := DEAD | ((deadCount & 0x000000FF) << 1)
-					debugString.WriteString(fmt.Sprintf("%dD", deadCount))
 					data = append(data, shifted)
 
 					//append this current alive cell
 					data = append(data, (*world.data)[y][x])
-					debugString.WriteString("A")
 					deadCount = 0
 				} else {
 					//append the alive data normally
 					data = append(data, (*world.data)[y][x])
-					debugString.WriteString("A")
 				}
 			}
 		}
-
-		//data = append(data, (*world.data)[y]...)
 	}
-	//log.Println(debugString.String())
-	//log.Println(world.ToString())
 	return data
 }
 

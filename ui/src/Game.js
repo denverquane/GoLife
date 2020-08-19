@@ -101,34 +101,26 @@ export default class Game extends Component {
                 let cell = this.props.boardData[i];
                 if ((cell & ALIVE) === 1) {
                     //this is so dumb; fighting JS' unsigned integer stupidity
-                    console.log("Alive at " + y + "," + x)
                     let r = ((cell >> 8) & (0x000000FF << 16)) >> 16;
                     let g = ((cell >> 8) & (0x000000FF << 8)) >> 8;
                     let b = (cell >> 8) & 0x000000FF;
-                    context.fillStyle = 'rgb(' + r + ', ' + g + ',' + b + ',1.0)';
+                    context.fillStyle = 'rgb(' + r + ', ' + g + ',' + b + ')';
                     context.fillRect(x * cWidth, y * cHeight, cWidth - 1, cHeight - 1);
+                    x++;
                 } else {
-                    //get the lowest 7 bits that aren't the bits for aliveness
-                    let rleDeadCells = (cell & 0x000000FE) >> 1
-                    //console.log(rleDeadCells)
-                    if (rleDeadCells > 1) {
+                    //get all the bits not associated with aliveness (dead cells don't need colors)
+                    let rleDeadCells = (cell & 0xFFFFFFFE) >> 1
+                    if (rleDeadCells > 0) {
                         x += rleDeadCells;
+                    } else {
+                        x++;
                     }
-
                 }
-                x++;
-                if (x >= this.props.width) {
+                if (x > this.props.width-2) {
                     y++;
                     x = 0;
                 }
             }
-            // for (let y = 0; y < this.props.height; y++) {
-            //     for (let x = 0; x < this.props.width; x++) {
-            //
-            //         elemIndex++;
-            //
-            //     }
-            // }
             context.fillStyle = "#000000";
             if (this.state.mouseInCanvas && this.state.currentRLE && this.props.paused) {
                 let r = (this.props.color >> 24) & 0xFF;

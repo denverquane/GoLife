@@ -103,7 +103,7 @@ func (dg DataGrid) NeighborsColorMajority(y, x uint32, neighbors byte) uint32 {
 }
 
 func colorOfCell(cell uint32) colorful.Color {
-	return colorful.Color{R: float64((cell>>24)&ALIVE) / 255.0, G: float64((cell>>16)&ALIVE) / 255.0, B: float64((cell>>8)&ALIVE) / 255.0}
+	return colorful.Color{R: float64((cell>>24)&0x000000FF) / 255.0, G: float64((cell>>16)&0x000000FF) / 255.0, B: float64((cell>>8)&0x000000FF) / 255.0}
 }
 
 type Direction byte
