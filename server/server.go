@@ -18,6 +18,8 @@ const NS_PER_MS = 1_000_000.0
 
 const DEBUG_BROADCAST_NON_REGISTERED = true
 
+const WORLD_DIM = 500
+
 var upgrader = websocket.Upgrader{} // use default options
 
 type Player struct {
@@ -74,8 +76,8 @@ func main() {
 
 func Run(addr *string) {
 	var GlobalWorld simulation.World
-	GlobalWorld = simulation.NewConwayWorld(200, 200)
-	go simulationWorker(&GlobalWorld, 30, SimulationChannel)
+	GlobalWorld = simulation.NewConwayWorld(WORLD_DIM, WORLD_DIM)
+	go simulationWorker(&GlobalWorld, 60, SimulationChannel)
 	go broadcastWorker(&GlobalWorld, BroadcastChannel)
 
 	http.HandleFunc("/ws", wsHandler)
@@ -85,7 +87,7 @@ func Run(addr *string) {
 func simulationWorker(world *simulation.World, targetFps int64, msgChan <-chan simulation.SimulatorMessage) {
 	msPerFrame := (1.0 / float64(targetFps)) * 1000.0
 
-	world.PlaceRLEAtCoords(RleMap["glider"], 0, 0, simulation.ALIVE_FULL)
+	world.PlaceRLEAtCoords(RleMap["glider"], 0, 0, simulation.FULL)
 
 	//GlobalWorld.PlaceRLEAtCoords(RleMap["pufferfish"], 100, 150, simulation.ALIVE_FULL)
 	paused := false

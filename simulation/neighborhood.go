@@ -44,7 +44,7 @@ func (dg *DataGrid) NewCellNeighborsColorBlend(y, x uint32, neighbors byte) uint
 	newRed := retColor.R * 255.0
 	newGreen := retColor.G * 255.0
 	newBlue := retColor.B * 255.0
-	return uint32(newRed)<<24 + uint32(newGreen)<<16 + uint32(newBlue)<<8 + ALIVE
+	return uint32(newRed)<<24 + uint32(newGreen)<<16 + uint32(newBlue)<<8 + ALIVE_NEW
 }
 
 func (dg *DataGrid) ExistingCellNeighborsColorBlend(oldCell uint32, y, x uint32, neighbors byte) uint32 {
@@ -69,7 +69,7 @@ func (dg *DataGrid) ExistingCellNeighborsColorBlend(oldCell uint32, y, x uint32,
 	newRed := retColor.R * 255.0
 	newGreen := retColor.G * 255.0
 	newBlue := retColor.B * 255.0
-	cell := uint32(newRed)<<24 + uint32(newGreen)<<16 + uint32(newBlue)<<8 + (oldCell & ALIVE)
+	cell := uint32(newRed)<<24 + uint32(newGreen)<<16 + uint32(newBlue)<<8 + (oldCell & ALIVE_NEW)
 	return Decay(cell)
 }
 
@@ -90,7 +90,7 @@ func (dg DataGrid) NeighborsColorMajority(y, x uint32, neighbors byte) uint32 {
 			newRed := col.R * 255.0
 			newGreen := col.G * 255.0
 			newBlue := col.B * 255.0
-			return uint32(newRed)<<24 + uint32(newGreen)<<16 + uint32(newBlue)<<8 + ALIVE
+			return uint32(newRed)<<24 + uint32(newGreen)<<16 + uint32(newBlue)<<8 + ALIVE_NEW
 		} else {
 			lastColor = col
 		}
@@ -99,11 +99,11 @@ func (dg DataGrid) NeighborsColorMajority(y, x uint32, neighbors byte) uint32 {
 	newRed := lastColor.R * 255.0
 	newGreen := lastColor.G * 255.0
 	newBlue := lastColor.B * 255.0
-	return uint32(newRed)<<24 + uint32(newGreen)<<16 + uint32(newBlue)<<8 + ALIVE
+	return uint32(newRed)<<24 + uint32(newGreen)<<16 + uint32(newBlue)<<8 + ALIVE_NEW
 }
 
 func colorOfCell(cell uint32) colorful.Color {
-	return colorful.Color{R: float64((cell>>24)&ALIVE) / 255.0, G: float64((cell>>16)&ALIVE) / 255.0, B: float64((cell>>8)&ALIVE) / 255.0}
+	return colorful.Color{R: float64((cell>>24)&0x000000FF) / 255.0, G: float64((cell>>16)&0x000000FF) / 255.0, B: float64((cell>>8)&0x000000FF) / 255.0}
 }
 
 type Direction byte
@@ -202,7 +202,7 @@ func (dg DataGrid) PerimeterNeighborsValue(dir Direction, y, x uint32) byte {
 }
 
 func isAlive(cell uint32) byte {
-	if cell&ALIVE > 0 {
+	if cell&ALIVE_BIT > 0 {
 		return byte(1)
 	} else {
 		return byte(0)
@@ -210,7 +210,7 @@ func isAlive(cell uint32) byte {
 }
 
 func isAliveBool(cell uint32) bool {
-	return cell&ALIVE > 0
+	return cell&ALIVE_BIT > 0
 }
 
 func NumNeighbors(neighborhood byte) int {
