@@ -5,6 +5,8 @@ import {CANVAS_BASE_HEIGHT, CANVAS_BASE_WIDTH} from './App';
 
 const ALIVE = 0x00000001;
 
+const bgColor = "#000000";
+
 export default class Game extends Component {
     lastTime;
 
@@ -104,7 +106,7 @@ export default class Game extends Component {
                     let r = ((cell >> 8) & (0x000000FF << 16)) >> 16;
                     let g = ((cell >> 8) & (0x000000FF << 8)) >> 8;
                     let b = (cell >> 8) & 0x000000FF;
-                    let aliveness = ((cell & 0x000000FF)+64.0) / 255.0;
+                    let aliveness = ((cell & 0x000000FF)+128.0) / 255.0;
                     context.fillStyle = 'rgba(' + r + ', ' + g + ',' + b + ',' + aliveness + ')';
                     //console.log('rgba(' + r + ', ' + g + ',' + b + ',' + aliveness + ')')
                     context.fillRect(x * cWidth, y * cHeight, cWidth - 1, cHeight - 1);
@@ -122,7 +124,7 @@ export default class Game extends Component {
                     x = 0;
                 }
             }
-            context.fillStyle = "#000000";
+            context.fillStyle = bgColor;
             if (this.state.mouseInCanvas && this.state.currentRLE && this.props.paused) {
                 let r = (this.props.color >> 24) & 0xFF;
                 let g = (this.props.color >> 16) & 0xFF;
@@ -139,7 +141,7 @@ export default class Game extends Component {
                     }
                 }
             }
-            context.fillStyle = "#000000";
+            context.fillStyle = bgColor;
             let timeToDraw = Date.now() - this.lastTime;
             console.log("Took " + timeToDraw + "ms to redraw the canvas")
         }

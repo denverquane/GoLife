@@ -18,7 +18,7 @@ const NS_PER_MS = 1_000_000.0
 
 const DEBUG_BROADCAST_NON_REGISTERED = true
 
-const WORLD_DIM = 500
+const WORLD_DIM = 1000
 
 var upgrader = websocket.Upgrader{} // use default options
 
@@ -123,7 +123,7 @@ func simulationWorker(world *simulation.World, targetFps int64, msgChan <-chan s
 			if !paused && numClients > 0 {
 				oldT := time.Now().UnixNano()
 				//2 = 5 workers in total
-				world.Tick(2, true)
+				world.Tick(3, true)
 
 				//Consider race condition of message being received AFTER another tick...
 				BroadcastChannel <- BroadcastMsg{
