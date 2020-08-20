@@ -18,7 +18,7 @@ const NS_PER_MS = 1_000_000.0
 
 const DEBUG_BROADCAST_NON_REGISTERED = true
 
-const WORLD_DIM = 1000
+const WORLD_DIM = 500
 
 var upgrader = websocket.Upgrader{} // use default options
 
@@ -87,7 +87,7 @@ func Run(addr *string) {
 func simulationWorker(world *simulation.World, targetFps int64, msgChan <-chan simulation.SimulatorMessage) {
 	msPerFrame := (1.0 / float64(targetFps)) * 1000.0
 
-	world.PlaceRLEAtCoords(RleMap["glider"], 0, 0, simulation.ALIVE_FULL)
+	world.PlaceRLEAtCoords(RleMap["glider"], 0, 0, simulation.FULL)
 
 	//GlobalWorld.PlaceRLEAtCoords(RleMap["pufferfish"], 100, 150, simulation.ALIVE_FULL)
 	paused := false

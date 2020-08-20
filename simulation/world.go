@@ -9,9 +9,9 @@ import (
 
 type DataGrid [][]uint32
 
-const ALIVE uint32 = 0x00_00_00_01
-const ALIVE_MASK uint32 = 0xFF_FF_FF_FE
-const ALIVE_FULL uint32 = 0xFF_FF_FF_FF
+const ALIVE_BIT uint32 = 0x00_00_00_01
+const ALIVE_NEW uint32 = 0x00_00_00_FF
+const FULL uint32 = 0xFF_FF_FF_FF
 const DEAD uint32 = 0x00_00_00_00
 
 type World struct {
@@ -35,14 +35,7 @@ func (world *World) GetFlattenedData() []uint32 {
 		deadCount := uint32(0)
 		for x := uint32(0); x < world.width; x++ {
 			//if the cell is dead, we can use all the color bits for RLE encoding of sequential dead cells
-			if deadCount == world.width-1 || x == world.width-1 {
-				shifted := deadCount << 1
-
-				data = append(data, shifted)
-				deadCount = 0
-			}
-
-			if (*world.data)[y][x]&ALIVE == 0 {
+			if (*world.data)[y][x]&ALIVE_BIT == 0 {
 				//dead cell; start the count
 				deadCount++
 			} else {
@@ -58,6 +51,13 @@ func (world *World) GetFlattenedData() []uint32 {
 					//append the alive data normally
 					data = append(data, (*world.data)[y][x])
 				}
+			}
+			//if we reached the end of the row, append the count
+			if deadCount == world.width-1 || x == world.width-1 {
+				shifted := deadCount << 1
+
+				data = append(data, shifted)
+				deadCount = 0
 			}
 		}
 	}
@@ -232,12 +232,23 @@ func (world *World) Tick(blendColors bool) {
 	world.tick++
 }
 
+func Decay(cell uint32) uint32 {
+	lowerByte := cell & 0x000000FF
+	//log.Printf("%32b\n", lowerByte)
+	if lowerByte == uint32(2) || lowerByte == uint32(1) {
+		//don't kill the cell, just keep it at 1
+		return cell
+	} else {
+		return cell - 2
+	}
+}
+
 func (world *World) setNewAliveBufferState(y, x uint32, neighborhood byte, blendColors bool) {
 	if world.aliveRulesMapping[neighborhood] {
 		if blendColors {
 			(*world.dataBuffer)[y][x] = (*world.data).ExistingCellNeighborsColorBlend((*world.data)[y][x], y, x, neighborhood)
 		} else {
-			(*world.dataBuffer)[y][x] = (*world.data)[y][x]
+			(*world.dataBuffer)[y][x] = Decay((*world.dataBuffer)[y][x])
 		}
 	} else {
 		(*world.dataBuffer)[y][x] = 0
@@ -262,8 +273,8 @@ func (world *World) ToString() string {
 	for y := uint32(0); y < world.height; y++ {
 		for x := uint32(0); x < world.width; x++ {
 			buf.WriteByte(' ')
-			if (*world.data)[y][x]&ALIVE > 0 {
-				buf.WriteString(fmt.Sprintf("%3d", (*world.data)[y][x]&ALIVE))
+			if (*world.data)[y][x]&ALIVE_BIT > 0 {
+				buf.WriteString(fmt.Sprintf("%3d", (*world.data)[y][x]&ALIVE_BIT))
 			} else {
 				buf.WriteString("___")
 			}
@@ -282,7 +293,7 @@ func (world *World) PlaceRLEAtCoords(rle RLE, y, x, color uint32) bool {
 	for yy := uint32(0); yy < rle.height; yy++ {
 		for xx := uint32(0); xx < rle.width; xx++ {
 			if rle.data[yy][xx] {
-				(*world.data)[y+yy][x+xx] = color | ALIVE
+				(*world.data)[y+yy][x+xx] = color | ALIVE_NEW
 			}
 		}
 	}
@@ -290,11 +301,11 @@ func (world *World) PlaceRLEAtCoords(rle RLE, y, x, color uint32) bool {
 }
 
 func (world *World) MarkAlive(y, x uint32) {
-	(*world.data)[y][x] = ALIVE_FULL
+	(*world.data)[y][x] = FULL
 }
 
 func (world *World) MarkAliveColor(y, x uint32, color uint32) {
-	(*world.data)[y][x] = ALIVE | (color & ALIVE_MASK)
+	(*world.data)[y][x] = color | ALIVE_NEW
 }
 
 func (world *World) Clear() {

@@ -104,7 +104,9 @@ export default class Game extends Component {
                     let r = ((cell >> 8) & (0x000000FF << 16)) >> 16;
                     let g = ((cell >> 8) & (0x000000FF << 8)) >> 8;
                     let b = (cell >> 8) & 0x000000FF;
-                    context.fillStyle = 'rgb(' + r + ', ' + g + ',' + b + ')';
+                    let aliveness = ((cell & 0x000000FF)+64.0) / 255.0;
+                    context.fillStyle = 'rgba(' + r + ', ' + g + ',' + b + ',' + aliveness + ')';
+                    //console.log('rgba(' + r + ', ' + g + ',' + b + ',' + aliveness + ')')
                     context.fillRect(x * cWidth, y * cHeight, cWidth - 1, cHeight - 1);
                     x++;
                 } else {
@@ -115,7 +117,7 @@ export default class Game extends Component {
                     }
                 }
                 //TODO still having some wrapping around to the beginning I think... investigate
-                if (x > this.props.width-2) {
+                if (x > this.props.width-1) {
                     y++;
                     x = 0;
                 }
