@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/denverquane/golife/proto/message"
 	"google.golang.org/protobuf/proto"
+	"sync"
 )
 
 type DataGrid [][]uint32
@@ -131,10 +132,9 @@ func (world *World) GetTick() uint64 {
 	return world.tick
 }
 
-func (world *World) Tick(blendColors bool) {
-	//only span the inner areas, don't do the perimeter yet
-	for y := uint32(1); y < world.height-1; y++ {
-		for x := uint32(1); x < world.width-1; x++ {
+func (world *World) innerWorker(minY, minX, maxY, maxX uint32, blendColors bool, wg *sync.WaitGroup) {
+	for y := minY; y < maxY; y++ {
+		for x := minX; x < maxX; x++ {
 			alive := isAliveBool((*world.data)[y][x])
 			neighborhood := world.data.InnerNeighborsValue(y, x)
 
@@ -145,6 +145,10 @@ func (world *World) Tick(blendColors bool) {
 			}
 		}
 	}
+	wg.Done()
+}
+
+func (world *World) PerimeterWorker(blendColors bool, wg *sync.WaitGroup) {
 	y := uint32(0)
 	for x := uint32(1); x < world.width-1; x++ {
 		alive := isAliveBool((*world.data)[y][x])
@@ -225,11 +229,58 @@ func (world *World) Tick(blendColors bool) {
 	} else {
 		world.setNewDeadBufferState(y, x, neighborhood, blendColors)
 	}
+	wg.Done()
+}
 
+func (world *World) swapBuffers() {
 	tempPtr := world.data
 	world.data = world.dataBuffer
 	world.dataBuffer = tempPtr
 	world.tick++
+}
+
+//workersSqrt is the square root of the numbers of workers to be used + 1. Aka workersSqrt = 3 means 9+1 workers will
+//be utilized
+func (world *World) Tick(workersSqrt uint32, blendColors bool) {
+
+	//TODO precompute all the dimensions of worker grids
+	//TODO probably also just make the workers once, and keep them idle?
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go world.PerimeterWorker(blendColors, &wg)
+
+	if workersSqrt == 1 {
+		wg.Add(1)
+		go world.innerWorker(1, 1, world.height-1, world.width-1, blendColors, &wg)
+	} else {
+		divisionsX := make([]uint32, workersSqrt+1)
+		divisionsY := make([]uint32, workersSqrt+1)
+		xStep := world.width / workersSqrt
+		yStep := world.height / workersSqrt
+
+		divisionsY[0] = 1
+		divisionsX[0] = 1
+		//divisionsY[workersSqrt+1] = world.height-1
+		//divisionsX[workersSqrt+1] = world.width-1
+		for i := uint32(1); i < workersSqrt; i++ {
+			divisionsX[i] = xStep * i
+			divisionsY[i] = yStep * i
+		}
+
+		divisionsY[workersSqrt] = world.height - 1
+		divisionsX[workersSqrt] = world.width - 1
+
+		for yi := uint32(0); yi < workersSqrt; yi++ {
+			for xi := uint32(0); xi < workersSqrt; xi++ {
+				//log.Printf("Worker spans [%d, %d] to (%d, %d)", divisionsY[yi], divisionsX[xi], divisionsY[yi+1], divisionsX[xi+1])
+				wg.Add(1)
+				go world.innerWorker(divisionsY[yi], divisionsX[xi], divisionsY[yi+1], divisionsX[xi+1], blendColors, &wg)
+			}
+		}
+	}
+
+	wg.Wait()
+	world.swapBuffers()
 }
 
 func Decay(cell uint32) uint32 {

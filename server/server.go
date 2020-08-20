@@ -84,7 +84,11 @@ func Run(addr *string) {
 	log.Fatal(http.ListenAndServe(*addr, nil))
 }
 
+const AVERAGE_WINDOW = 100
+
 func simulationWorker(world *simulation.World, targetFps int64, msgChan <-chan simulation.SimulatorMessage) {
+	timesCount := 0
+	timesTotal := 0.0
 	msPerFrame := (1.0 / float64(targetFps)) * 1000.0
 
 	world.PlaceRLEAtCoords(RleMap["glider"], 0, 0, simulation.FULL)
@@ -118,7 +122,8 @@ func simulationWorker(world *simulation.World, targetFps int64, msgChan <-chan s
 			clientsLock.Unlock()
 			if !paused && numClients > 0 {
 				oldT := time.Now().UnixNano()
-				world.Tick(true)
+				//2 = 5 workers in total
+				world.Tick(2, true)
 
 				//Consider race condition of message being received AFTER another tick...
 				BroadcastChannel <- BroadcastMsg{
@@ -127,9 +132,19 @@ func simulationWorker(world *simulation.World, targetFps int64, msgChan <-chan s
 				}
 				//log.Print(GlobalWorld.ToString())
 				tickMs := float64(time.Now().UnixNano()-oldT) / NS_PER_MS
+				timesTotal += tickMs
+				if timesCount == AVERAGE_WINDOW {
+					log.Printf("Average over %d ticks: %f ms per tick\n", AVERAGE_WINDOW, timesTotal/float64(AVERAGE_WINDOW))
+					timesTotal = 0
+					timesCount = 0
+				} else {
+					timesCount++
+				}
 				//log.Printf("%fms to tick; sleeping %fms\n", tickMs, msPerFrame - tickMs)
 				//time.Sleep(time.Millisecond * 500)
-				time.Sleep(time.Duration(NS_PER_MS * (msPerFrame - tickMs)))
+				if msPerFrame-tickMs > 0 {
+					time.Sleep(time.Duration(NS_PER_MS * (msPerFrame - tickMs)))
+				}
 			} else {
 				BroadcastChannel <- BroadcastMsg{
 					Btype:  WORLD,
