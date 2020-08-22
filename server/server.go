@@ -49,6 +49,8 @@ var SimulationChannel = make(chan simulation.SimulatorMessage)
 var BroadcastChannel = make(chan BroadcastMsg)
 
 var addr = flag.String("addr", ":5000", "http service address")
+
+//TODO consider that RLEs are stored in RAM... could get large
 var RleMap = make(map[string]simulation.RLE)
 
 func main() {

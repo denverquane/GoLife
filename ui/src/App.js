@@ -2,6 +2,7 @@ import React, {Component} from 'react';
 import './App.css';
 import Game from './Game';
 import NameInput from './NameInput';
+import RLEPicker from "./RLEPicker";
 
 const Messages = require('./proto/message/message_pb');
 
@@ -199,7 +200,7 @@ class App extends Component {
     }
 
     onEnterRLEMode(name) {
-        if (this.state.currentRLE && this.state.currentRLE.getName() === name) {
+        if (name === "") {
             this.setState({currentRLE: null})
         } else {
             this.state.rles.forEach((item, idx) => {
@@ -282,27 +283,10 @@ class App extends Component {
                         {this.state.gameState === UNCONNECTED ? <div>DISCONNECTED</div> : <div/>}
                     </div>
                     <div className="App-header-right">
-                        {this.state.rles ? <div>
-                            <div>
-                                Patterns available:
-                            </div>
-                            {this.state.rles.map((item, i) => {
-                                return <div key={i} style={{display: "flex", flexDirection: "row"}}>
-                                    <div>
-                                        {/*<div style={ {*/}
-                                        {/*    width: '45px',*/}
-                                        {/*    height: '45px',*/}
-                                        {/*    borderRadius: '2px',*/}
-                                        {/*    background: `#${colorString}`,*/}
-                                        {/*}} />*/}
-                                    </div>
-                                    <button disabled={!this.state.paused}
-                                            onClick={() => this.onEnterRLEMode(item.getName())}>
-                                        {item.getName()}
-                                    </button>
-
-                                </div>
-                            })}</div> : <div/>
+                        {this.state.rles ?
+                            <RLEPicker rles={this.state.rles}
+                                       onSelect={this.onEnterRLEMode} color={this.state.color}/>
+                                       : <div/>
                         }
                     </div>
 
