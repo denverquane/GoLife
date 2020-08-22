@@ -9,9 +9,6 @@ const UNCONNECTED = 0;
 const CONNECTED = 1;
 const REGISTERED = 2;
 
-export const CANVAS_BASE_WIDTH = 1000;
-export const CANVAS_BASE_HEIGHT = 1000;
-
 const DEBUG_DONT_REGISTER_FOR_DATA = false;
 
 let BASE_URL = process.env.REACT_APP_SERVICE_URL;
@@ -40,6 +37,8 @@ class App extends Component {
             boardTick: 0,
             boardWidth: 0,
             boardHeight: 0,
+            totalCanvasWidth: 0,
+            totalCanvasHeight: 0,
             paused: false,
         };
         this.onChangeUsername = this.onChangeUsername.bind(this);
@@ -214,8 +213,8 @@ class App extends Component {
     onCanvasClick(event) {
         let x = event.nativeEvent.offsetX;
         let y = event.nativeEvent.offsetY;
-        let cellX = Math.floor(x / ((this.state.boardWidth + CANVAS_BASE_WIDTH) / this.state.boardWidth))
-        let cellY = Math.floor(y / ((this.state.boardHeight + CANVAS_BASE_HEIGHT) / this.state.boardHeight))
+        let cellX = Math.floor(x / ((this.state.boardWidth + this.state.boardWidth) / this.state.boardWidth))
+        let cellY = Math.floor(y / ((this.state.boardHeight + this.state.boardHeight) / this.state.boardHeight))
         //console.log(cellX, cellY)
 
         let cmdMsg = new Messages.Command();
@@ -251,7 +250,11 @@ class App extends Component {
                                 {this.state.playersOnline
                                     ? <div style={{alignSelf: "center"}}>
                                         {this.state.playersOnline.map(function (item, i) {
-                                            const colorString = item.getColor().toString(16).toUpperCase().substr(0, 6);
+                                            let radixColor = item.getColor().toString(16).toUpperCase();
+                                            if (radixColor.length < 8) {
+                                                radixColor = "0" + radixColor
+                                            }
+                                            const colorString = radixColor.substr(0, 6);
                                             return <div key={i} style={{display: "flex", flexDirection: "row"}}>
                                                 <div>
                                                     <div style={{
@@ -324,8 +327,8 @@ class App extends Component {
                                       width={this.state.boardWidth} height={this.state.boardHeight}
                                       onClick={this.onCanvasClick}
                                     //we do this addition to guarantee every cell has a 1 pixel border
-                                      canvasWidth={CANVAS_BASE_WIDTH + this.state.boardWidth}
-                                      canvasHeight={CANVAS_BASE_HEIGHT + this.state.boardHeight}
+                                      canvasWidth={this.state.boardWidth + this.state.boardWidth}
+                                      canvasHeight={this.state.boardHeight + this.state.boardHeight}
                                       paused={this.state.paused}
                                       currentRLE={this.state.currentRLE}
                                       color={this.state.color}/>

@@ -18,7 +18,8 @@ const NS_PER_MS = 1_000_000.0
 
 const DEBUG_BROADCAST_NON_REGISTERED = true
 
-const WORLD_DIM = 1000
+const WORLD_HEIGHT = 400
+const WORLD_WIDTH = 750
 
 var upgrader = websocket.Upgrader{} // use default options
 
@@ -76,7 +77,7 @@ func main() {
 
 func Run(addr *string) {
 	var GlobalWorld simulation.World
-	GlobalWorld = simulation.NewConwayWorld(WORLD_DIM, WORLD_DIM)
+	GlobalWorld = simulation.NewConwayWorld(WORLD_HEIGHT, WORLD_WIDTH)
 	go simulationWorker(&GlobalWorld, 60, SimulationChannel)
 	go broadcastWorker(&GlobalWorld, BroadcastChannel)
 
@@ -91,7 +92,7 @@ func simulationWorker(world *simulation.World, targetFps int64, msgChan <-chan s
 	timesTotal := 0.0
 	msPerFrame := (1.0 / float64(targetFps)) * 1000.0
 
-	world.PlaceRLEAtCoords(RleMap["glider"], 0, 0, simulation.FULL)
+	//world.PlaceRLEAtCoords(RleMap["glider"], 0, 0, simulation.FULL)
 
 	//GlobalWorld.PlaceRLEAtCoords(RleMap["pufferfish"], 100, 150, simulation.ALIVE_FULL)
 	paused := false
@@ -313,7 +314,7 @@ func wsHandler(w http.ResponseWriter, r *http.Request) {
 					log.Println(err)
 				} else {
 					//TODO verify name/color aren't taken
-					log.Printf("Registering %s\n", regMsg.Name)
+					log.Printf("Registering %s with color %d\n", regMsg.Name, regMsg.Color)
 					clientsLock.Lock()
 					clients[c] = Player{name: regMsg.Name, color: regMsg.Color}
 					err := c.WriteMessage(websocket.BinaryMessage, data)

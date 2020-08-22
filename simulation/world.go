@@ -30,10 +30,12 @@ func (world *World) GetDims() (height uint32, width uint32) {
 	return world.height, world.width
 }
 
+const MaxCells31Bits = 4294967294
+
 func (world *World) GetFlattenedData() []uint32 {
 	data := make([]uint32, 0)
+	deadCount := uint32(0)
 	for y := uint32(0); y < world.height; y++ {
-		deadCount := uint32(0)
 		for x := uint32(0); x < world.width; x++ {
 			//if the cell is dead, we can use all the color bits for RLE encoding of sequential dead cells
 			if (*world.data)[y][x]&ALIVE_BIT == 0 {
@@ -53,15 +55,15 @@ func (world *World) GetFlattenedData() []uint32 {
 					data = append(data, (*world.data)[y][x])
 				}
 			}
-			//if we reached the end of the row, append the count
-			if deadCount == world.width-1 || x == world.width-1 {
+			//if we're gonna overflow 32 bits, or we've reached the end of the world, add the shift
+			if (y == world.height-1 && x == world.width-1) || deadCount == MaxCells31Bits {
 				shifted := deadCount << 1
-
 				data = append(data, shifted)
 				deadCount = 0
 			}
 		}
 	}
+	//log.Print(data)
 	return data
 }
 
@@ -107,7 +109,7 @@ func (world *World) ToFullProtoBytes() ([]byte, error) {
 	}
 	return marshalled, nil
 }
-func NewConwayWorld(width, height uint32) World {
+func NewConwayWorld(height, width uint32) World {
 	data := make(DataGrid, height)
 	for i, _ := range data {
 		data[i] = make([]uint32, width)

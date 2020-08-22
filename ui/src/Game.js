@@ -1,8 +1,6 @@
 import React, {Component} from 'react';
 import './Game.css';
 
-import {CANVAS_BASE_HEIGHT, CANVAS_BASE_WIDTH} from './App';
-
 const ALIVE = 0x00000001;
 
 const bgColor = "#000000";
@@ -49,8 +47,8 @@ export default class Game extends Component {
     onMouseMove(event) {
         let x = event.nativeEvent.offsetX;
         let y = event.nativeEvent.offsetY;
-        let cellX = Math.floor(x / ((this.state.width + CANVAS_BASE_WIDTH) / this.state.width))
-        let cellY = Math.floor(y / ((this.state.height + CANVAS_BASE_HEIGHT) / this.state.height))
+        let cellX = Math.floor(x / ((this.state.width + this.state.width) / this.state.width))
+        let cellY = Math.floor(y / ((this.state.height + this.state.height) / this.state.height))
 
         if (cellX !== this.state.mouseCellX || cellY !== this.state.mouseCellY) {
             this.setState({mouseCellX: cellX, mouseCellY: cellY})
@@ -111,17 +109,25 @@ export default class Game extends Component {
                     //console.log('rgba(' + r + ', ' + g + ',' + b + ',' + aliveness + ')')
                     context.fillRect(x * cWidth, y * cHeight, cWidth - 1, cHeight - 1);
                     x++;
+                    if (x > this.props.width-1) {
+                        y++;
+                        x=0;
+                    }
                 } else {
                     //get all the bits not associated with aliveness (dead cells don't need colors)
                     let rleDeadCells = cell >> 1
+                    //console.log(rleDeadCells)
                     if (rleDeadCells > 0) {
+                        for (; x + rleDeadCells > this.props.width-1; ) {
+                            //subtract how many cells it took to reach the end of the row
+                            let cellsSkipped = this.props.width - x;
+                            rleDeadCells -= cellsSkipped;
+                            x=0;
+                            y++;
+                        }
+
                         x += rleDeadCells;
                     }
-                }
-                //TODO still having some wrapping around to the beginning I think... investigate
-                if (x > this.props.width-1) {
-                    y++;
-                    x = 0;
                 }
             }
             context.fillStyle = bgColor;
